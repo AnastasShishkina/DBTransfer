@@ -1,10 +1,11 @@
 from pathlib import Path
 
 from pika import ConnectionParameters
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseSettings
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
 
 
 class Settings(BaseSettings):
@@ -23,16 +24,18 @@ class Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self):
-        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
     def RABBITMG_CONN_PARAMS(self):
         return ConnectionParameters( host=self.RMQ_HOST, port=self.RMQ_PORT,)
+    #
+    # @property
+    # def LOG_LEVEL(self):
+    #     return self.LOG_LEVEL
 
-    @property
-    def LOG_LEVEL(self):
-        return self.LOG_LEVEL
-
-    model_config = SettingsConfigDict(env_file=str(ROOT / ".env"))
+    class Config:
+        env_file = str(ROOT / ".env")
+        env_file_encoding = "utf-8"
 
 settings = Settings()

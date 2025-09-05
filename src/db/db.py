@@ -1,25 +1,45 @@
 from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import  create_engine, Session
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import func
 from src.config import settings
+from itertools import islice
 
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=True) # echo=True
+EXCLUDE_UPDATE  = {"created_at", "updated_at"}
+BATCH_SIZE = 1000
 
 def get_session():
     return Session(engine)
 
-def upsert_sqlmodel(model_cls, payload: dict, conflict_cols: list[str], exclude_update: set[str] = None, session: Session = None):
-    exclude_update = exclude_update or set()
-    table = model_cls.__table__
-    stmt = insert(table).values(**payload)
-    set_map = {c.name: getattr(stmt.excluded, c.name)
-               for c in table.columns
-               if not c.primary_key and c.name not in exclude_update}
-    if "updated_at" in table.c:
-        set_map["updated_at"] = func.now()
 
-    stmt = stmt.on_conflict_do_update(
-        index_elements=[table.c[name] for name in conflict_cols],
-        set_=set_map
-    )
-    session.exec(stmt)
+def _chunked(iterable, size):
+    it = iter(iterable)
+    while True:
+        chunk = list(islice(it, size))
+        if not chunk:
+            break
+        yield chunk
+
+
+def upsert_data(configMetaData, data):
+    dataModel = configMetaData['model']
+    updatedColumns = list(column.name for column in dataModel.__table__.columns if not column.primary_key and column.name not in EXCLUDE_UPDATE )
+    pkColums = list(column.name for column in dataModel.__table__.columns if  column.primary_key)
+    with Session(engine) as session:
+        for batch in _chunked(data, BATCH_SIZE):
+            rows = []
+            for raw in batch:
+                dto = dataModel.model_validate(raw)
+                record = dto.dict( by_alias=False, exclude_unset=True,  exclude=EXCLUDE_UPDATE )
+                rows.append(record)
+
+            if not rows:
+                continue
+
+            sqlRequest = insert(dataModel.__table__).values(rows)
+            set_map = {column: getattr(sqlRequest.excluded, column) for column in updatedColumns}
+            set_map["updated_at"] = func.now()
+            sqlRequest = sqlRequest.on_conflict_do_update( index_elements=pkColums,set_=set_map, )
+            session.exec(sqlRequest)
+            session.commit()
