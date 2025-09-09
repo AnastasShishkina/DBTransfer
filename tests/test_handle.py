@@ -1,7 +1,6 @@
 import json
-from pika import ConnectionParameters, BlockingConnection
-from src.config import settings
 from pathlib import Path
+
 from src.handlers.handel_message import handle_json
 
 NAME_JSON = "ПрямыеРасходы.json" #укажи нужнвй файл в директории testData

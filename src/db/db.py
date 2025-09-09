@@ -1,8 +1,10 @@
-from sqlmodel import create_engine, Session
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy import func
-from src.config import settings
 from itertools import islice
+
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert
+from sqlmodel import Session, create_engine
+
+from src.config import settings
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=True) # echo=True
 EXCLUDE_UPDATE  = {"created_at", "updated_at"}

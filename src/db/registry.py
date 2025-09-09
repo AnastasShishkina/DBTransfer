@@ -1,5 +1,5 @@
 # app/registry.py
-from src.db.models import StgExpenseItem, StgCitiesV1, StgCitiesV2
+from src.db.models import StgCitiesV1, StgCitiesV2, StgExpenseItem
 
 REGISTRY = {
     "Справочники.тп_СтатьиЗатрат": {

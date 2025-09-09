@@ -1,6 +1,8 @@
 import json
-from src.handlers.registry import REGISTRY
+
 from src.db.db import upsert_data
+from src.handlers.registry import REGISTRY
+
 
 def handle_json(body):
     # TODO: минимальная проврека на формат JSON

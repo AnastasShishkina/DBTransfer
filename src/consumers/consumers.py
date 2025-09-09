@@ -1,4 +1,5 @@
 from pika import BlockingConnection
+
 from src.config import settings
 from src.handlers.handel_message import handle_json
 

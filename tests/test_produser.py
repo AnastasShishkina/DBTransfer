@@ -1,7 +1,10 @@
 import json
-from pika import ConnectionParameters, BlockingConnection
-from src.config import settings
 from pathlib import Path
+
+from pika import BlockingConnection
+
+from src.config import settings
+
 #Дополнительные справочники.json
 # ПрямыеРасходы.json
 NAME_JSON = "ПрямыеРасходы.json" #укажи нужнвй файл в директории testData

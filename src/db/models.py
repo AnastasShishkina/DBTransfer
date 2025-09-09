@@ -1,13 +1,13 @@
 import uuid
-from typing import Optional
-from datetime import datetime,timezone
-from sqlmodel import SQLModel, Field
-from sqlalchemy import Column, DateTime, func, text, Numeric, Index
+from datetime import UTC, datetime
 from decimal import Decimal
+
+from sqlalchemy import Column, DateTime, Numeric, text
+from sqlmodel import Field, SQLModel
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 class BaseModelConfig(SQLModel):
 

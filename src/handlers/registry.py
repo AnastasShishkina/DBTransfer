@@ -1,4 +1,4 @@
-from src.db.models import StgExpenseItem, StgCitiesConfig, StgCitiesV2, StgExpenseRecord
+from src.db.models import StgCitiesConfig, StgCitiesV2, StgExpenseItem, StgExpenseRecord
 
 REGISTRY = {
     "Справочники.тп_СтатьиЗатрат": {"model": StgExpenseItem},
