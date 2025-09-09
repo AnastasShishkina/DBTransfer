@@ -3,8 +3,9 @@ from pathlib import Path
 
 from src.handlers.handel_message import handle_json
 
-NAME_JSON = "ПрямыеРасходы.json" #укажи нужнвй файл в директории testData
+NAME_JSON = "ПрямыеРасходы.json"  # укажи нужнвй файл в директории testData
 FILE_PATH = Path(__file__).parent / "testData" / NAME_JSON
+
 
 def main():
     with FILE_PATH.open(encoding="utf-8") as f:
@@ -12,5 +13,5 @@ def main():
     handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

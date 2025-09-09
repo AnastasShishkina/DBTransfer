@@ -5,7 +5,6 @@ REGISTRY = {
     "Справочники.тп_Города": {"model": StgCitiesConfig},
     "Справочники.тп_Города2": {"model": StgCitiesV2},
     "ПрямыеЗатраты": {"model": StgExpenseRecord},
-
     # Вложенная структура:
     # "Прием_товара": {
     #     "model": StgGoodsReceipt,           # куда пишем корневой объект

@@ -8,12 +8,12 @@ def handle_json(body):
     # TODO: минимальная проврека на формат JSON
     templates = json.loads(body)
     for template in templates:
-        nameMetaData = template.get('НаименованиеМетаданных')
-        data = template.get('Данные')
+        nameMetaData = template.get("НаименованиеМетаданных")
+        data = template.get("Данные")
 
         if nameMetaData not in REGISTRY:
             # TODO: переделать
-            print('%s Нет в регистре. Добавь связку метаданных и таблицы БД в REGISTRY' %(nameMetaData))
+            print("Нет в регистре. Добавь связку метаданных и таблицы БД в REGISTRY", nameMetaData)
             raise Exception
 
         configMetaData = REGISTRY[nameMetaData]

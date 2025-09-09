@@ -11,19 +11,17 @@ def callback(ch_, method, properties, body):
         ch_.basic_ack(delivery_tag=method.delivery_tag)
 
     except Exception as e:
-        #log.exception("Ошибка обработки: %s", e)
+        # log.exception("Ошибка обработки: %s", e)
         print("Ошибка обработки:", e)
         # с возвратом в очередь
-        #ch_.basic_ack(delivery_tag=method.delivery_tag)
+        # ch_.basic_ack(delivery_tag=method.delivery_tag)
         ch_.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 
 def start_consumer():
-    with BlockingConnection(settings.RABBITMG_CONN_PARAMS) as connection:
-        with connection.channel() as channel:
-            channel.queue_declare(queue=settings.RMQ_QUEUE, durable=True)
-            channel.basic_consume(queue=settings.RMQ_QUEUE, on_message_callback=callback)
+    with BlockingConnection(settings.RABBITMG_CONN_PARAMS) as connection, connection.channel() as channel:
+        channel.queue_declare(queue=settings.RMQ_QUEUE, durable=True)
+        channel.basic_consume(queue=settings.RMQ_QUEUE, on_message_callback=callback)
 
-            print("Жду сообщений")
-            channel.start_consuming()
-
+        print("Жду сообщений")
+        channel.start_consuming()

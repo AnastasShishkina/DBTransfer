@@ -6,7 +6,6 @@ from pydantic import BaseSettings
 ROOT = Path(__file__).resolve().parents[1]
 
 
-
 class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
@@ -27,7 +26,8 @@ class Settings(BaseSettings):
 
     @property
     def RABBITMG_CONN_PARAMS(self):
-        return ConnectionParameters( host=self.RMQ_HOST, port=self.RMQ_PORT,)
+        return ConnectionParameters(host=self.RMQ_HOST, port=self.RMQ_PORT)
+
     #
     # @property
     # def LOG_LEVEL(self):
@@ -36,5 +36,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = str(ROOT / ".env")
         env_file_encoding = "utf-8"
+
 
 settings = Settings()

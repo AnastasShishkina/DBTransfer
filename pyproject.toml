@@ -1,21 +1,26 @@
 [tool.ruff]
 # Целевая версия Python
 target-version = "py311"
-line-length = 100
+line-length = 120
 # Исключаем мусор и автоген
 exclude = [
   ".venv", ".git", ".mypy_cache", "__pycache__",
   "build", "dist",
   "src/migrations/versions",  # автоген Alembic
+    "src/db/registry.py",
 ]
 
 [tool.ruff.lint]
 # Набор правил: F(ошибки Pyflakes), E/PyCodeStyle, I(импорты как isort),
 # UP(обновления синтаксиса), B(bugbear), SIM(упрощения), RUF(доп. правила Ruff)
+
 select = ["F", "E", "I", "UP", "B", "SIM", "RUF"]
 ignore = [
-  "E203",  # совместимость с форматтерами
-  "E501",  # длину строки контролирует форматтер
+    "E203",  # совместимость с форматтерами
+    "E501",  # длину строки контролирует форматтер
+    "RUF001",
+    "RUF002",
+    "RUF003"
 ]
 
 # Разрешить автоматические фиксы максимума правил
@@ -26,5 +31,5 @@ unfixable = []
 # Ruff как форматтер (вместо black)
 quote-style = "double"
 indent-style = "space"
-skip-magic-trailing-comma = false
+skip-magic-trailing-comma = true
 line-ending = "lf"  # если нужно CRLF — поставь "crlf"
