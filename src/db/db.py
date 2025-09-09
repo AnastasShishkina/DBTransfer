@@ -1,5 +1,4 @@
-from sqlmodel import SQLModel, create_engine, Session
-from sqlmodel import  create_engine, Session
+from sqlmodel import create_engine, Session
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import func
 from src.config import settings
