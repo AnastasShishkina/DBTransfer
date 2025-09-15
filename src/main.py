@@ -6,12 +6,13 @@ from src.db.models import create_all_tables, dev_drop_all_tables
 
 if __name__ == "__main__":
     # setup_logging()
-    print("test")
-    dev_drop_all_tables(engine)
-    create_all_tables(engine)
+
+    #dev_drop_all_tables(engine)
+    #create_all_tables(engine)
 
     print("test2")
-    start_consumer()
+    # заготовка к RABBIT MQ
+    # start_consumer()
 
     # from sqlalchemy import text
     # from sqlmodel import create_engine

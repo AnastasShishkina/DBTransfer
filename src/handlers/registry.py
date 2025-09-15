@@ -1,25 +1,27 @@
-from src.db.models import StgCitiesConfig, StgCitiesV2, StgExpenseItem, StgExpenseRecord
+import  src.db.models as models
 
 REGISTRY = {
-    "Справочники.тп_СтатьиЗатрат": {"model": StgExpenseItem},
-    "Справочники.тп_Города": {"model": StgCitiesConfig},
-    "Справочники.тп_Города2": {"model": StgCitiesV2},
-    "ПрямыеЗатраты": {"model": StgExpenseRecord},
-    # Вложенная структура:
-    # "Прием_товара": {
-    #     "model": StgGoodsReceipt,           # куда пишем корневой объект
-    #     "pk_attr": "goods_doc_id",          # как звать PK в модели (чтобы прокинуть в детей)
-    #     "children": [
-    #         {
-    #             "array": "Товары",          # ключ массива в JSON
-    #             "model": StgGoodsReceiptItem,
-    #             "fk_attr": "goods_doc_id",  # имя FK-поля в дочерней модели
-    #         },
-    #         {
-    #             "array": "ДополнительныеРасходы",
-    #             "model": StgGoodsReceiptExpense,
-    #             "fk_attr": "goods_doc_id",
-    #         },
-    #     ],
-    # },
+    "Справочник.ПодразделенияОрганизаций": models.Departments,
+    "Справочник.тп_СтатьиЗатрат": models.CostCategories,
+    "Справочник.тп_ВидыТранспорта": models.TypesTransport,
+    "Справочник.тп_Машины": models.Transports,
+    "Справочник.тп_Города": models.Cities,
+    "Справочник.СтраныМира": models.Countries,
+    "Справочник.тп_Маршруты": models.Routes,
+    "Справочник.тп_Склады": models.Warehouses,
+    "Документ.тп_ПеремещениеТовара": models.Transfers,
+    "Документ.тп_ПеремещениеТовара.Товары": models.GoodsTransfers,
+    "ПрямыеЗатраты": models.DirectExpenses,
+    "Товары": models.Goods,
+    "Справочник.тп_ВидыТоваров": models.GoodsTypes,
+    "Справочник.тп_Клиенты": models.Clients,
+    "Справочник.тп_ТипыУпаковок": models.PackageTypes,
+    "МестонахождениеТовара": models.GoodsLocation,
+    "ОбщиеЗатраты": models.GeneralExpenses,
+    "СкладскиеЗатраты": models.WarehouseExpenses,
+    "Документ.тп_ПриемТовара": models.Receipts,
+    "Документ.тп_ПриемТовара.Товары": models.GoodsReceipts,
+
+
+
 }
