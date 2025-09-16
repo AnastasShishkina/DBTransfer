@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, create_engine
 
 from src.config import settings
-from src.utils import timeit, _chunked
+from src.utils import _chunked, timeit
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)  # echo=True
 EXCLUDE_UPDATE = {"created_at", "updated_at"}
@@ -18,7 +18,7 @@ def upsert_data(dataModel, data):
         for column in dataModel.__table__.columns
         if not column.primary_key and column.name not in EXCLUDE_UPDATE
     )
-    pkColums = list(column.name for column in dataModel.__table__.columns if column.primary_key)
+    pkColums = list(column.name for column in dataModel.__table__.primary_key.columns)
     with Session(engine) as session:
         for batch in _chunked(data, BATCH_SIZE):
             rows = []
@@ -40,3 +40,15 @@ def upsert_data(dataModel, data):
                 sqlRequest = sqlRequest.on_conflict_do_nothing(index_elements=pkColums)
             session.exec(sqlRequest)
             session.commit()
+
+def delinsert_data(dataModel, data):
+    """
+       Полная замена строк по переданным PK:
+       1) CREATE TEMP TABLE AS SELECT * FROM (VALUES ... ) v(cols...)
+       2) DELETE target USING temp по PK
+       3) INSERT target(cols) SELECT cols FROM temp
+    """
+    table = dataModel.__table__
+
+    pkColums = [col.name for col in table.primary_key.columns]
+    #IN PROGRESS

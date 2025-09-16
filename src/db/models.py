@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from pydantic import validator
-from sqlalchemy import Column, DateTime, UniqueConstraint, text
+from sqlalchemy import Column, DateTime, UniqueConstraint, text, Index
 from sqlmodel import Field, SQLModel
 
 
@@ -111,6 +111,14 @@ class Cities(TimestampMixin,BaseModelConfig, table=True):
     country_id: uuid.UUID | None = Field(alias="Страна")
 
 
+class Counterparties(TimestampMixin,BaseModelConfig, table=True):
+    """
+    Справочник.Контрагенты
+    """
+    id: uuid.UUID = Field(primary_key=True, alias="Ссылка")
+    name: str | None = Field(alias="Наименование", max_length=50)
+
+
 class Routes(TimestampMixin,BaseModelConfig, table=True):
     """
     Справочник.тп_Маршруты
@@ -135,6 +143,10 @@ class Warehouses(TimestampMixin, BaseModelConfig, table=True):
     city_id: uuid.UUID | None = Field(alias="Город")
     country_id: uuid.UUID | None = Field(alias="Страна")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
+    __table_args__ = (
+        Index("ix_wh_department_id", "department_id"),
+        Index("ix_wh_country_id", "country_id"),
+    )
 
 
 class Transfers(TimestampMixin, BaseModelConfig, table=True):
@@ -151,6 +163,7 @@ class Transfers(TimestampMixin, BaseModelConfig, table=True):
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     transport_id: uuid.UUID | None = Field(alias="ТранспортноеСредство")
     document_id: uuid.UUID | None = Field(alias="ДокументОснование")
+    __table_args__ = (Index("ix_tr_date", "date"),)
 
 
 class GoodsTransfers(TimestampMixin, BaseModelConfig, table=True):
@@ -161,6 +174,11 @@ class GoodsTransfers(TimestampMixin, BaseModelConfig, table=True):
 
     transfer_id: uuid.UUID = Field(primary_key=True, alias="СсылкаДокумента")
     goods_id: uuid.UUID = Field(primary_key=True, alias="Товар")
+
+    __table_args__ = (
+            Index("ix_gt_transfer_id", "transfer_id"),
+            Index("ix_gt_goods_id", "goods_id"),
+        )
 
 
 class GoodsTypes(TimestampMixin, BaseModelConfig, table=True):
@@ -255,6 +273,9 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     supplier_id: uuid.UUID | None = Field(alias="Поставщик")
     amount: Decimal | None = Field(alias="СуммаСтавка")
+    __table_args__ = (
+        Index("ix_de_updated_at", "updated_at"),
+        Index("ix_de_goods_doc_id", "goods_doc_id"))
 
 
 class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
@@ -268,6 +289,7 @@ class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     cost_category_id: uuid.UUID = Field(primary_key=True, alias="СтатьяЗатрат")
     is_previous_period: bool | None = Field(alias="ЭтоРасходПрошлогоПериода")
     amount: Decimal | None = Field(alias="СуммаUSD")
+    __table_args__ = (Index("ix_ge_updated_at", "updated_at"),)
 
 
 class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
@@ -284,7 +306,10 @@ class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     amount: Decimal | None = Field(alias="СуммаUSD")
     storno: bool | None = Field(alias="Сторно")
-
+    __table_args__ = (
+        Index("ix_we_updated_at", "updated_at"),
+        Index("ix_we_department_id", "department_id"),
+    )
 
 class Receipts(TimestampMixin, BaseModelConfig, table=True):
     """
@@ -317,14 +342,23 @@ class DmGoodsExpenseAlloc(SQLModel, table=True):
     registrar_id: uuid.UUID = Field(primary_key=True)
     goods_id: uuid.UUID = Field(primary_key=True)
     cost_category_id: uuid.UUID = Field(primary_key=True)
+    department_id: uuid.UUID = Field(primary_key=True)
     date: datetime = Field(primary_key=True, nullable=False)
     type_expense: str = Field()
     amount: Decimal = Field(nullable=False)
     __table_args__ = (
-            UniqueConstraint(
-                "type_expense", "registrar_id", "goods_id", "cost_category_id",
-                name="dm_goods_expense_alloc_uq",
-            ),)
+        Index("ix_dm_alloc_registrar_type", "registrar_id", "type_expense"),
+        UniqueConstraint(
+            "type_expense",
+            "registrar_id",
+            "goods_id",
+            "cost_category_id",
+            "department_id",
+            name="dm_goods_expense_alloc_uq",
+        ),
+        Index("ix_dm_alloc_registrar_date", "registrar_id", "date"),
+        Index("ix_dm_alloc_goods", "goods_id", "date"),
+    )
 
 def create_all_tables(engine):
     SQLModel.metadata.create_all(engine)
