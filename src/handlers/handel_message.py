@@ -1,6 +1,6 @@
 import json
 
-from src.db.db import upsert_data
+from src.db.db import replace_scope
 from src.handlers.registry import REGISTRY
 
 
@@ -16,6 +16,6 @@ def handle_json(body):
             print("Нет в регистре. Добавь связку метаданных и таблицы БД в REGISTRY", nameMetaData)
             continue
 
-        upsert_data(dataModel, data)
+        replace_scope(dataModel, data)
 
 

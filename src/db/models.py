@@ -171,6 +171,7 @@ class GoodsTransfers(TimestampMixin, BaseModelConfig, table=True):
     Документ.тп_ПеремещениеТовара.Товары
     """
     __tablename__ = "goods_transfers"
+    __scope_delete_cols__ = ["transfer_id"]
 
     transfer_id: uuid.UUID = Field(primary_key=True, alias="СсылкаДокумента")
     goods_id: uuid.UUID = Field(primary_key=True, alias="Товар")
@@ -245,6 +246,7 @@ class GoodsLocation(TimestampMixin, BaseModelConfig, table=True):
     Регистр.Сведения.МестонахождениеТовара
     """
     __tablename__ = "goods_location"
+    __scope_delete_cols__ = ["registrar_id"]
 
     registrar_id: uuid.UUID = Field(primary_key=True, alias="Регистратор")
     date: datetime = Field(primary_key=True, alias="Период")
@@ -262,6 +264,7 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     ПрямыеЗатраты
     """
     __tablename__ = "direct_expenses"
+    __scope_delete_cols__ = ["registrar_id"]
 
     registrar_id: uuid.UUID = Field(primary_key=True, alias="Регистратор")
     goods_doc_id: uuid.UUID = Field(primary_key=True, alias="ДокументСТоварами")
@@ -283,6 +286,7 @@ class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     ОбщиеЗатраты
     """
     __tablename__ = "general_expenses"
+    __scope_delete_cols__ = ["registrar_id"]
 
     registrar_id: uuid.UUID = Field(primary_key=True, alias="Регистратор")
     date: datetime = Field(primary_key=True, alias="Период")
@@ -297,6 +301,7 @@ class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
     СкладскиеЗатраты
     """
     __tablename__ = "warehouse_expenses"
+    __scope_delete_cols__ = ["registrar_id"]
 
     registrar_id: uuid.UUID = Field(primary_key=True, alias="Регистратор")
     date: datetime = Field(primary_key=True, alias="Период")
@@ -329,6 +334,7 @@ class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
     Документ.тп_ПеремещениеТовара.Товары
     """
     __tablename__ = "goods_receipts"
+    __scope_delete_cols__ = ["receipt_id"]
 
     receipt_id: uuid.UUID = Field(primary_key=True, alias="СсылкаДокумента")
     goods_id: uuid.UUID = Field(primary_key=True, alias="Товар")

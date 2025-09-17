@@ -89,7 +89,7 @@ DELETE_ALLOC_EXPENSES_SQL = """
 
 
 INSERT_ALLOC_EXPENSES_SQL = """
-       INSERT INTO dm_goods_expense_alloc (type_expense, registrar_id, goods_id, department_id,cost_category_id, date, amount)
+       INSERT INTO dm_goods_expense_alloc (type_expense, registrar_id, goods_id, department_id, cost_category_id, date, amount)
        SELECT type_expense, registrar_id, department_id, goods_id, cost_category_id, date, sum(amount)
        FROM tmp_table
        group by type_expense, registrar_id, goods_id, department_id, cost_category_id, date;
