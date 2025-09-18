@@ -8,6 +8,11 @@ from fastapi import FastAPI, HTTPException, Query
 from src.db.dags import recalc_period_by_months
 from src.db.db import engine
 from src.handlers.handel_message import handle_json
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+from pathlib import Path
+
 app = FastAPI()
 
 
@@ -35,3 +40,12 @@ def costs_recalculate(
         return {"status": "ok", "months": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка расчёта: {e}")
+
+
+STATIC_DIR = Path(__file__).resolve().parents[1] / "html"  # -> src/html
+app.mount("/ui", StaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
+
+# удобный редирект с корня
+@app.get("/")
+def root():
+    return RedirectResponse(url="/ui/")
