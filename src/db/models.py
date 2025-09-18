@@ -30,10 +30,6 @@ class TimestampMixin(SQLModel):
         default_factory=utcnow,
         sa_column=Column(DateTime(timezone=True), server_default=text("TIMEZONE('UTC', now())"), nullable=False),
     )
-    updated_at: datetime = Field(
-        default_factory=utcnow,
-        sa_column=Column(DateTime(timezone=True), server_default=text("TIMEZONE('UTC', now())"), nullable=False),
-    )
 
 
 class ETLJobStatus(SQLModel, table=True):
@@ -163,7 +159,10 @@ class Transfers(TimestampMixin, BaseModelConfig, table=True):
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     transport_id: uuid.UUID | None = Field(alias="ТранспортноеСредство")
     document_id: uuid.UUID | None = Field(alias="ДокументОснование")
-    __table_args__ = (Index("ix_tr_date", "date"),)
+    __table_args__ = (
+        Index("ix_tr_date", "date"),
+        {"postgresql_partition_by": "RANGE (date)"},
+    )
 
 
 class GoodsTransfers(TimestampMixin, BaseModelConfig, table=True):
@@ -276,10 +275,11 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     supplier_id: uuid.UUID | None = Field(alias="Поставщик")
     amount: Decimal | None = Field(alias="СуммаСтавка")
-    __table_args__ = (
-        Index("ix_de_updated_at", "updated_at"),
-        Index("ix_de_goods_doc_id", "goods_doc_id"))
 
+    __table_args__ =(
+        Index("ix_de_goods_doc_id", "goods_doc_id"),
+        {"postgresql_partition_by": "RANGE (date)"},
+    )
 
 class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     """
@@ -293,7 +293,8 @@ class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     cost_category_id: uuid.UUID = Field(primary_key=True, alias="СтатьяЗатрат")
     is_previous_period: bool | None = Field(alias="ЭтоРасходПрошлогоПериода")
     amount: Decimal | None = Field(alias="СуммаUSD")
-    __table_args__ = (Index("ix_ge_updated_at", "updated_at"),)
+    __table_args__ = (
+        {"postgresql_partition_by": "RANGE (date)"},)
 
 
 class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
@@ -312,8 +313,8 @@ class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
     amount: Decimal | None = Field(alias="СуммаUSD")
     storno: bool | None = Field(alias="Сторно")
     __table_args__ = (
-        Index("ix_we_updated_at", "updated_at"),
         Index("ix_we_department_id", "department_id"),
+        {"postgresql_partition_by": "RANGE (date)"},
     )
 
 class Receipts(TimestampMixin, BaseModelConfig, table=True):
@@ -354,16 +355,9 @@ class DmGoodsExpenseAlloc(SQLModel, table=True):
     amount: Decimal = Field(nullable=False)
     __table_args__ = (
         Index("ix_dm_alloc_registrar_type", "registrar_id", "type_expense"),
-        UniqueConstraint(
-            "type_expense",
-            "registrar_id",
-            "goods_id",
-            "cost_category_id",
-            "department_id",
-            name="dm_goods_expense_alloc_uq",
-        ),
         Index("ix_dm_alloc_registrar_date", "registrar_id", "date"),
         Index("ix_dm_alloc_goods", "goods_id", "date"),
+        {"postgresql_partition_by": "RANGE (date)"},
     )
 
 def create_all_tables(engine):

@@ -38,7 +38,6 @@ def upsert_data(dataModel, data):
             sqlRequest = insert(dataModel.__table__).values(rows)
             set_map = {column: getattr(sqlRequest.excluded, column) for column in updated_columns}
             if set_map:
-                set_map["updated_at"] = func.now()
                 sqlRequest = sqlRequest.on_conflict_do_update(index_elements=pk_colums, set_=set_map)
             else:
                 sqlRequest = sqlRequest.on_conflict_do_nothing(index_elements=pk_colums)
@@ -53,6 +52,8 @@ def replace_scope(dataModel, rows):
        2) DELETE target USING temp по PK
        3) INSERT target(cols) SELECT cols FROM temp
     """
+    if not rows:
+        return
     normalized = []
     for raw in rows:
         dto = dataModel.model_validate(raw)

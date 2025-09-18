@@ -7,7 +7,7 @@ from src.config import settings
 
 # Дополнительные справочники.json
 # ПрямыеРасходы.json
-NAME_JSON = "ПрямыеРасходы.json"  # укажи нужнвй файл в директории testData
+NAME_JSON = "ПрямыеРасходы.json"  # укажи нужный файл в директории testData
 FILE_PATH = Path(__file__).parent / "testData" / NAME_JSON
 
 

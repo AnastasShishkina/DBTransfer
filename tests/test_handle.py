@@ -2,8 +2,9 @@ import json
 from pathlib import Path
 
 from src.handlers.handel_message import handle_json
-
-NAME_JSON = "ПрямыеРасходы.json"  # укажи нужнвй файл в директории testData
+# tovary_random_sum.json
+# "ПрямыеРасходы (2).json"
+NAME_JSON = "Товары.json"  # укажи нужный файл в директории testData
 FILE_PATH = Path(__file__).parent / "testData" / NAME_JSON
 
 
