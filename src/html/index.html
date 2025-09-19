@@ -5,42 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Расчёт по диапазону дат</title>
   <style>
-    :root { --gap: 12px; }
+    :root {
+      --bg: #FFF8CC;            /* мягкий светло‑жёлтый фон */
+      --bg2: #FFF2B8;           /* градиентный подтон */
+      --panel: #FFFBE6;         /* светлая панель/карточка */
+      --accent: #FFD400;        /* фирменный жёлтый (1С) */
+      --accent-strong: #FFC700; /* насыщённый жёлтый для hover */
+      --border: #E6C200;        /* тёплая жёлтая рамка */
+      --ink: #222222;           /* основной текст */
+      --muted: #6b6b6b;         /* вторичный текст */
+    }
+
     * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; }
-    body { margin: 0; background: #0f172a; color: #e5e7eb; display: grid; place-items: center; min-height: 100dvh; }
-    .card { width: min(720px, 92vw); background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-    h1 { font-size: 20px; margin: 0 0 10px; color: #f3f4f6; }
-    p.note { margin: 0 0 16px; color: #9ca3af; font-size: 14px; }
-    form { display: grid; gap: var(--gap); grid-template-columns: 1fr 1fr auto; align-items: end; }
-    label { display: grid; gap: 6px; font-size: 13px; color: #cbd5e1; }
-    input[type="date"] { background:#0b1220; color:#e5e7eb; border:1px solid #334155; border-radius:10px; padding:10px 12px; outline: none; }
-    input[type="date"]:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,.25); }
-    button { height: 42px; padding: 0 16px; border: 0; border-radius: 10px; background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
-    button[disabled] { opacity: .6; cursor: not-allowed; }
-    .row { margin-top: 16px; display: grid; gap: var(--gap); }
-    .out { white-space: pre-wrap; background: #0b1220; border:1px solid #1f2937; border-radius: 12px; padding: 12px; min-height: 80px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; color:#c7d2fe; }
-    .ok { color:#86efac; }
-    .err { color:#fca5a5; }
-    .small { font-size: 12px; color:#94a3b8; }
+    body { margin: 0; background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); color: var(--ink); display: grid; place-items: center; min-height: 100dvh; }
+
+    .card { width: min(720px, 92vw); background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+
+    h1 { font-size: 20px; margin: 0 0 10px; color: var(--ink); }
+    p.note { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+
+    form { display: grid; gap: 12px; grid-template-columns: 1fr 1fr auto; align-items: end; }
+    label { display: grid; gap: 6px; font-size: 13px; color: #333; }
+
+    input[type="month"] { background:#fff; color:#111; border:2px solid var(--border); border-radius:10px; padding:10px 12px; outline: none; }
+    input[type="month"]:focus { border-color: var(--accent); box-shadow:0 0 0 3px rgba(255,212,0,.25); }
+
+    button { height: 42px; padding: 0 16px; border: 2px solid var(--border); border-radius: 10px; background: var(--accent); color: #111; font-weight: 700; cursor: pointer; letter-spacing: .2px; }
+    button:hover { background: var(--accent-strong); }
+    button:active { background: #F0B800; border-color: #D4B100; }
+    button[disabled] { opacity: .75; cursor: not-allowed; }
+
+    .row { margin-top: 16px; display: grid; gap: 12px; }
+    .out { white-space: pre-wrap; background: #fff; border: 2px dashed var(--accent); border-radius: 12px; padding: 12px; min-height: 80px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; color:#333; }
+
+    .ok { color:#1B5E20; }
+    .err { color:#5C2C00; } /* без красного, тёплый коричневый для ошибок */
+    .small { font-size: 12px; color: var(--muted); }
   </style>
 </head>
 <body>
   <div class="card">
+
     <h1>Расчёт по диапазону дат</h1>
-    <p class="note">Выберите даты и нажмите «Рассчитать». По умолчанию запрос уходит на <code>/costs/recalculate</code> методом <code>POST</code> с query‑параметрами <code>start_date</code> и <code>end_date</code>.</p>
+    <p class="note">Выберите <b>месяц начала</b> и <b>месяц окончания</b>. Запрос отправляется на <code>/costs/recalculate</code> методом <code>POST</code> с параметрами <code>start_date</code> и <code>end_date</code> (если требуется расчет только на 1 месяц, то укажите его дважды).</p>
 
     <form id="form">
       <label>
         Начало периода
-        <input id="from" type="date" required />
+        <input id="from" type="month" required />
       </label>
       <label>
         Конец периода
-        <input id="to" type="date" required />
+        <input id="to" type="month" required />
       </label>
       <button id="run" type="submit">Рассчитать</button>
     </form>
-
 
     <div class="row">
       <div id="status" class="small"></div>
@@ -50,76 +69,87 @@
 
   <script>
     // ===== НАСТРОЙКА =====
-    // Относительный путь, если фронтенд отдаётся тем же хостом, что и backend
-    // Если API на другом хосте/порту, укажи полный URL, например:
-    // const API_URL = "http://localhost:8000/api/calc";
-    // const API_URL = "http://localhost:8000/costs/recalculate";
-    const API_URL = "/costs/recalculate";
+    const API_URL = "/costs/recalculate"; // тот же хост/порт, POST c query-параметрами
 
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('form');
+      const runBtn = document.getElementById('run');
+      const out = document.getElementById('out');
+      const statusEl = document.getElementById('status');
+      const from = document.getElementById('from');
+      const to = document.getElementById('to');
 
-    const form = document.getElementById('form');
-    const runBtn = document.getElementById('run');
-    const out = document.getElementById('out');
-    const statusEl = document.getElementById('status');
-    const from = document.getElementById('from');
-    const to = document.getElementById('to');
-
-    // Значения по умолчанию: сегодня и сегодня
-    const today = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    from.value = fmt(today);
-    to.value = fmt(today);
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      out.textContent = '';
-      statusEl.textContent = '';
-
-      const date_from = from.value;
-      const date_to = to.value;
-
-      if (!date_from || !date_to) {
-        statusEl.textContent = 'Заполните обе даты.';
-        statusEl.className = 'small err';
-        return;
-      }
-      if (date_from > date_to) {
-        statusEl.textContent = 'Дата начала не может быть позже даты конца.';
-        statusEl.className = 'small err';
-        return;
-      }
-
-      runBtn.disabled = true;
-      const oldText = runBtn.textContent;
-      runBtn.textContent = 'Считаю…';
-
+      // --- Дефолтные значения: прошлый месяц и текущий месяц (YYYY-MM) ---
       try {
-        const url = `${API_URL}?start_date=${encodeURIComponent(date_from)}&end_date=${encodeURIComponent(date_to)}`;
-        const res = await fetch(url, { method: 'POST' });
+        const today = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const monthFmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+        const firstOfCurrent = new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstOfPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        from.value = monthFmt(firstOfPrev);
+        to.value = monthFmt(firstOfCurrent);
+      } catch (e) {
+        console.warn('Не удалось выставить дефолтные месяцы:', e);
+      }
 
-        const text = await res.text();
-        let payload;
-        try { payload = JSON.parse(text); } catch (_) { payload = text; }
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        out.textContent = '';
+        statusEl.textContent = '';
 
-        if (!res.ok) {
-          statusEl.textContent = `Ошибка HTTP ${res.status}`;
+        const fromMonth = from.value;   // YYYY-MM
+        const toMonth = to.value;       // YYYY-MM
+
+        if (!fromMonth || !toMonth) {
+          statusEl.textContent = 'Укажите оба месяца.';
           statusEl.className = 'small err';
-          out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
           return;
         }
 
-        statusEl.textContent = 'Готово';
-        statusEl.className = 'small ok';
-        out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
-      } catch (err) {
-        statusEl.textContent = 'Сетевая ошибка';
-        statusEl.className = 'small err';
-        out.textContent = String(err);
-      } finally {
-        runBtn.disabled = false;
-        runBtn.textContent = oldText;
-      }
+        const fromDate = new Date(fromMonth + '-01');
+        const toDate = new Date(toMonth + '-01');
+        if (fromDate > toDate) {
+          statusEl.textContent = 'Месяц начала не может быть позже месяца конца.';
+          statusEl.className = 'small err';
+          return;
+        }
+
+        const date_from = `${fromMonth}-01`;
+        const date_to = `${toMonth}-01`;
+
+        runBtn.disabled = true;
+        const oldText = runBtn.textContent;
+        runBtn.textContent = 'Считаю…';
+
+        try {
+          const url = `${API_URL}?start_date=${encodeURIComponent(date_from)}&end_date=${encodeURIComponent(date_to)}`;
+          const res = await fetch(url, { method: 'POST' });
+
+          const text = await res.text();
+          let payload; try { payload = JSON.parse(text); } catch (_) { payload = text; }
+
+          // Показать URL для отладки (сворачиваемый блок)
+          statusEl.innerHTML = `Запрос: <code>${url}</code>`;
+          statusEl.className = 'small';
+
+          if (!res.ok) {
+            out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+            statusEl.innerHTML += ` • Ошибка HTTP <b>${res.status}</b>`;
+            statusEl.className = 'small err';
+            return;
+          }
+
+          out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+          statusEl.innerHTML += ' • <b class="ok">Готово</b>';
+        } catch (err) {
+          statusEl.textContent = 'Сетевая ошибка';
+          statusEl.className = 'small err';
+          out.textContent = String(err);
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = oldText;
+        }
+      });
     });
   </script>
 </body>
