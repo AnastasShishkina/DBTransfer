@@ -139,6 +139,7 @@ class Warehouses(TimestampMixin, BaseModelConfig, table=True):
     city_id: uuid.UUID | None = Field(alias="Город")
     country_id: uuid.UUID | None = Field(alias="Страна")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
+
     __table_args__ = (
         Index("ix_wh_department_id", "department_id"),
         Index("ix_wh_country_id", "country_id"),
@@ -214,9 +215,7 @@ class Goods(TimestampMixin, BaseModelConfig, table=True):
     by_weight: bool | None = Field(alias="ПоВесу")
     place_number: int | None = Field(alias="НомерМеста")
     total_places: int | None = Field(alias="ВсегоМест")
-    @validator('goods_receipt', pre=True)
-    def _uuid_empty_to_none(cls, v):
-        return None if isinstance(v, str) and v.strip() == "" else v
+
 
 class PackageTypes(TimestampMixin, BaseModelConfig, table=True):
     """

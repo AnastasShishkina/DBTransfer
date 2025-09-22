@@ -8,22 +8,25 @@ from src.utils import iter_months
 # Распределение прямых расходов
 ALLOC_DIRECT_EXPENSES_SQL = """
     CREATE TEMP TABLE tmp_table ON COMMIT DROP AS
-    SELECT
-        'Прямые расходы' AS type_expense,
-        de.registrar_id,
-        gd.id AS goods_id,
-        de.cost_category_id,
-        wh.department_id,
-        de.date,
-        ROUND(de.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY de.registrar_id), 0), 2) AS amount
-    FROM direct_expenses AS de
-    JOIN goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
-    JOIN goods AS gd ON gd.id = gt.goods_id
-    JOIN transfers AS tf ON tf.id = gt.transfer_id
-    JOIN warehouses AS wh ON tf.out_warehouse_id = wh.id
-    WHERE gd.amount IS NOT NULL
-      AND de.date >= :mstart AND de.date < :mnext   
+        SELECT
+            'Прямые расходы' AS type_expense,
+            t_de.registrar_id,
+            gd.id AS goods_id,
+            t_de.cost_category_id,
+            wh.department_id,
+            t_de.date,
+            TRUNC(t_de.total_amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY t_de.registrar_id, t_de.cost_category_id), 0), 2) AS amount
+        FROM tmp_de_key_amount AS t_de
+        JOIN direct_expenses AS de ON (t_de.registrar_id = de.registrar_id AND t_de.cost_category_id = de.cost_category_id)
+        JOIN goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
+        JOIN goods AS gd ON gd.id = gt.goods_id
+        JOIN transfers AS tf ON tf.id = gt.transfer_id
+        JOIN warehouses AS wh ON tf.out_warehouse_id = wh.id
+        WHERE gd.amount IS NOT NULL
+        AND de.date >= :mstart AND de.date < :mnext
+        ;
 """
+
 
 # Распределение складских расходов
 ALLOC_WAREHOUSE_EXPENSES_SQL = """
@@ -35,7 +38,7 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
         we.cost_category_id,
         we.department_id,
         we.date,
-        ROUND(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), 2) AS amount
+        TRUNC(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), 2) AS amount
     FROM warehouse_expenses AS we
     JOIN departments AS de ON de.id = we.department_id
     JOIN warehouses AS wh ON wh.department_id = de.id
@@ -43,9 +46,10 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
     JOIN goods AS gd ON gd.id = gl.goods_id
     WHERE gl.goods_status = 2  -- отправление
       AND we.date >= :mstart AND we.date < :mnext
-      AND gl.date >= :mstart AND gl.date < :mnext
-    
+      AND gl.date >= :mstart AND gl.date < :mnext   
 """
+
+
 # Распределение общих расходов
 ALLOC_GENERAL_EXPENSES_SQL = """
     CREATE TEMP TABLE tmp_table ON COMMIT DROP AS
@@ -56,7 +60,7 @@ ALLOC_GENERAL_EXPENSES_SQL = """
         ge.cost_category_id,
         wh_out.department_id,
         ge.date,
-        ROUND(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), 2) AS amount
+        TRUNC(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), 2) AS amount
     FROM general_expenses AS ge
     JOIN transfers AS tr
       ON tr.date >= :mstart AND tr.date < :mnext
@@ -72,6 +76,39 @@ ALLOC_GENERAL_EXPENSES_SQL = """
     ;
 
 """
+
+
+UPDATE_ALLOC_EXPENSES_SQL ="""
+    WITH tmp_sum_amount AS (
+        SELECT DISTINCT ON (tmp.type_expense, tmp.registrar_id, tmp.cost_category_id)
+               tmp.ctid,
+               tmp.type_expense,
+               tmp.registrar_id,
+               tmp.cost_category_id,
+               tmp.goods_id,
+               SUM(tmp.amount) OVER ( PARTITION BY tmp.type_expense, tmp.registrar_id, tmp.cost_category_id) AS sum_amount,
+               t_de.total_amount
+        FROM tmp_table AS tmp
+        JOIN tmp_de_key_amount AS t_de
+          ON t_de.registrar_id    = tmp.registrar_id
+         AND t_de.cost_category_id = tmp.cost_category_id
+        ORDER BY
+            tmp.type_expense,
+            tmp.registrar_id,
+            tmp.cost_category_id,
+            tmp.amount DESC,
+            tmp.goods_id,
+            tmp.ctid
+    ),
+       delta as (
+        SELECT ctid, (total_amount - sum_amount) AS delta
+        FROM tmp_sum_amount)     
+    UPDATE tmp_table AS u
+    SET amount = u.amount + t_s.delta
+    FROM delta AS t_s
+    WHERE u.ctid     = t_s.ctid ;
+                           """
+
 
 DELETE_ALLOC_EXPENSES_SQL = """
         DELETE FROM dm_goods_expense_alloc d
@@ -106,26 +143,43 @@ def mark_success(engine: Engine, job_name: str, ts: Optional[datetime] = None) -
         conn.execute(q, {"job": job_name, "ts": ts or datetime.now()})
 
 
+def create_temp_table_key(conn, table_name: str, mstart: date, mnext: date) -> None:
+    create_sql = f"""
+               CREATE TEMP TABLE tmp_de_key_amount ON COMMIT DROP AS
+                SELECT DISTINCT ON (registrar_id, cost_category_id)
+                registrar_id,
+                cost_category_id,
+                date  AS date,
+                amount AS total_amount
+                FROM {table_name}
+                WHERE date >= '{mstart}' AND date < '{mnext}'
+           """
+    conn.exec_driver_sql(create_sql)
+
+
 def delete_temp_tables(engine: Engine) -> None:
     q = text("DROP TABLE IF EXISTS tmp_table")
     with engine.begin() as conn:
         conn.execute(q, {})
 
 
-def replace_allocations_for_month(engine: Engine, job_name: str, create_sql_month: str, mstart: date, mnext: date,):
+def replace_allocations_for_month(engine: Engine, table_name: str, create_sql_month: str, mstart: date, mnext: date,):
     """
     Запускает один цикл для ОДНОГО месяца:
-      1) создаёт TEMP tmp_table c расчётом только за [mstart, mnext)
-      2) удаляет старые данные этого типа за месяц
-      3) заливает агрегат
-      4) фиксирует успех прогона
+        создаёт TEMP таблицу с уникальным ключом затраты и ее суммой
+        создаёт TEMP tmp_table c расчётом только за [mstart, mnext)
+        прибавляет погрешность при разделении самому дорогому товару
+        удаляет старые данные этого типа за месяц
+        вставка агрегата
+        фиксация успех прогона
     """
     with engine.begin() as conn:
+        create_temp_table_key(conn, table_name, mstart, mnext)
         conn.execute(text(create_sql_month), {"mstart": mstart, "mnext": mnext})
+        conn.execute(text(UPDATE_ALLOC_EXPENSES_SQL))
         conn.execute(text(DELETE_ALLOC_EXPENSES_SQL), {"mstart": mstart, "mnext": mnext})
         conn.execute(text(INSERT_ALLOC_EXPENSES_SQL))
-    mark_success(engine, job_name)
-
+    mark_success(engine, table_name)
 
 
 def recalc_period_by_months( engine: Engine,  period_start: date, period_end: date,) -> list[dict]:
@@ -137,15 +191,17 @@ def recalc_period_by_months( engine: Engine,  period_start: date, period_end: da
 
     for mstart, mnext in iter_months(period_start, period_end):
 
-        replace_allocations_for_month(engine, "alloc_direct_expenses",    ALLOC_DIRECT_EXPENSES_SQL,    mstart, mnext)
-        replace_allocations_for_month(engine, "alloc_warehouse_expenses", ALLOC_WAREHOUSE_EXPENSES_SQL, mstart, mnext)
-        replace_allocations_for_month(engine, "alloc_general_expenses",   ALLOC_GENERAL_EXPENSES_SQL,   mstart, mnext)
+        replace_allocations_for_month(engine, "direct_expenses",    ALLOC_DIRECT_EXPENSES_SQL,    mstart, mnext)
+        replace_allocations_for_month(engine, "warehouse_expenses", ALLOC_WAREHOUSE_EXPENSES_SQL, mstart, mnext)
+        replace_allocations_for_month(engine, "general_expenses",   ALLOC_GENERAL_EXPENSES_SQL,   mstart, mnext)
 
-        results.append({
-            "month": mstart.strftime("%Y-%m"),
-            "from": mstart.isoformat(),
-            "to_exclusive": mnext.isoformat(),
-            "status": "ok",
-        })
+        results.append(
+            {
+                "month": mstart.strftime("%Y-%m"),
+                "from": mstart.isoformat(),
+                "to_exclusive": mnext.isoformat(),
+                "status": "ok",
+            }
+        )
 
     return results
