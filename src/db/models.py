@@ -139,6 +139,7 @@ class Warehouses(TimestampMixin, BaseModelConfig, table=True):
     city_id: uuid.UUID | None = Field(alias="Город")
     country_id: uuid.UUID | None = Field(alias="Страна")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
+    telegram_address: str | None = Field(alias="АдресСкладаТелеграм")
 
     __table_args__ = (
         Index("ix_wh_department_id", "department_id"),
@@ -207,6 +208,10 @@ class Goods(TimestampMixin, BaseModelConfig, table=True):
     goods_type_id: uuid.UUID | None = Field(alias="ВидТовара")
     volume: float | None = Field(alias="Объем")
     weight: float | None = Field(alias="Вес")
+    length: float | None = Field(alias="Длина")
+    width: float | None = Field(alias="Ширина")
+    height: float | None = Field(alias="Высота")
+    price: float | None = Field(alias="Цена")
     price_per_m3: float | None = Field(alias="ЦенаЗаКуб")
     price_per_ton: float | None = Field(alias="ЦенаЗаТонну")
     amount: Decimal | None = Field(alias="Сумма")
@@ -215,7 +220,11 @@ class Goods(TimestampMixin, BaseModelConfig, table=True):
     by_weight: bool | None = Field(alias="ПоВесу")
     place_number: int | None = Field(alias="НомерМеста")
     total_places: int | None = Field(alias="ВсегоМест")
+    order_number: str | None = Field(alias="НомерОрдера")
+    days_in_transit: int | None = Field(alias="ДнейВПути")
+    arrival_date: datetime | None = Field(alias="ДатаПрибытияИлиТекущая")
 
+    total_amount: Decimal | None = Field(alias="СуммаВсего")
 
 class PackageTypes(TimestampMixin, BaseModelConfig, table=True):
     """
@@ -237,6 +246,28 @@ class Clients(TimestampMixin, BaseModelConfig, table=True):
     id: uuid.UUID = Field(primary_key=True, alias="Ссылка")
     code: str | None = Field(alias="КодКлиента", max_length=50)
     name: str | None = Field(alias="Наименование", max_length=50)
+
+    # Данные клиента
+    client_lastname: str | None = Field(alias="КлиентФамилия", max_length=50)
+    client_firstname: str | None = Field(alias="КлиентИмя", max_length=50)
+    client_passport_number: str | None = Field(alias="КлиентНомерПаспорта", max_length=20)
+    client_passport_series: str | None = Field(alias="КлиентСерияПаспорта", max_length=20)
+    client_phone_telegram: str | None = Field(alias="КлиентНомерТелефонаТелеграм", max_length=50)
+    client_phone: str | None = Field(alias="КлиентНомерТелефона", max_length=50)
+
+    # Представитель
+    repr_lastname: str | None = Field(alias="ПредставительФамилия", max_length=50)
+    repr_firstname: str | None = Field(alias="ПредставительИмя", max_length=50)
+    repr_passport_series: str | None = Field(alias="ПредставительСерияПаспорта", max_length=20)
+    repr_passport_number: str | None = Field(alias="ПредставительНомерПаспорта", max_length=20)
+    repr_phone: str | None = Field(alias="ПредставительТелефона", max_length=50)
+
+    # Региональный представитель
+    rg_lastname: str | None = Field(alias="РГФамилия", max_length=50)
+    rg_passport_series: str | None = Field(alias="РГСерияПаспорта", max_length=20)
+    rg_passport_number: str | None = Field(alias="РГНомерПаспорта", max_length=20)
+    rg_phone: str | None = Field(alias="РГНомерТелефона", max_length=50)
+    rg_name: str | None = Field(alias="РегиональныйПредставитель", max_length=100)
 
 
 class GoodsLocation(TimestampMixin, BaseModelConfig, table=True):
@@ -327,6 +358,9 @@ class Receipts(TimestampMixin, BaseModelConfig, table=True):
     number: str | None = Field(alias="Номер", max_length=50)
     warehouse_id: uuid.UUID | None = Field(alias="Склад")
     client_id: uuid.UUID | None = Field(alias="Клиент")
+    shop_address: str | None = Field(alias="АдресМагазинаНаименование", max_length=200)
+    shop_phone: str | None = Field(alias="ТелефонМагазина", max_length=50)
+    shop_name: str | None = Field(alias="НаименованиеМагазина", max_length=100)
 
 
 class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
