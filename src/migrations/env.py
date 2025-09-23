@@ -17,6 +17,14 @@ target_metadata = SQLModel.metadata
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
+def include_object(obj, name, type_, reflected, compare_to):
+    # игнорируем таблицы из схемы partitions
+    if type_ == "table" and getattr(obj, "schema", None) == "partitions":
+        return False
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 

@@ -45,6 +45,7 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
     JOIN goods_location AS gl ON gl.sender_warehouse_id = wh.id
     JOIN goods AS gd ON gd.id = gl.goods_id
     WHERE gl.goods_status = 2  -- отправление
+      AND gd.amount IS NOT NULL  
       AND we.date >= :mstart AND we.date < :mnext
       AND gl.date >= :mstart AND gl.date < :mnext   
 """
@@ -71,6 +72,7 @@ ALLOC_GENERAL_EXPENSES_SQL = """
     JOIN goods_transfers AS gt ON gt.transfer_id = tr.id
     JOIN goods AS gd ON gd.id = gt.goods_id
     WHERE ge.date >= :mstart AND ge.date < :mnext
+      AND gd.amount IS NOT NULL
       AND cn_out.name = 'КИТАЙ'
       AND cn_in.name <> 'КИТАЙ'
     ;
@@ -205,3 +207,4 @@ def recalc_period_by_months( engine: Engine,  period_start: date, period_end: da
         )
 
     return results
+

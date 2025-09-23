@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
-
-from src.db.db import engine
+from src.logger.logger import logger
 from src.handlers.handel_message import handle_json
-from src.db.models import dev_drop_all_tables
 
 
 FILES_PATH = Path(__file__).parent.parent / "data" # папка с json файлами
@@ -16,12 +14,11 @@ def firstLoadData(path):
                 json_data = json.load(f)
 
             handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
-
-            print(f"[OK] {file_path.name} обработан")
+            logger.info("Файл успешно обработан: %s", file_path.name)
         except Exception as e:
-            print(f"[ERR] {file_path.name}: {e}")
+            logger.error("Ошибка в обработке файла : %s , %s ", file_path.name, e)
+
 
 
 if __name__ == "__main__":
-    #dev_drop_all_tables(engine)
     firstLoadData(FILES_PATH)
