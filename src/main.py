@@ -1,5 +1,5 @@
 import uvicorn
-from fastAPI import app
+from src.fastAPI import app
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
