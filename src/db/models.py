@@ -161,7 +161,7 @@ class Transfers(TimestampMixin, BaseModelConfig, table=True):
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     transport_id: uuid.UUID | None = Field(alias="ТранспортноеСредство")
     document_id: uuid.UUID | None = Field(alias="ДокументОснование")
-    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
+
     __table_args__ = (
         Index("ix_tr_date", "date"),
         {"postgresql_partition_by": "RANGE (date)"},
@@ -301,12 +301,11 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     date: datetime = Field(primary_key=True, alias="Дата", nullable=False)
     registrar_type: str = Field(primary_key=True, alias="ТипРегистратора", max_length=128)
     goods_doc_type: str | None = Field(alias="ТипДокументаСТоварами", max_length=128)
-    cost_category_id: uuid.UUID | None = Field(alias="СтатьяЗатрат")
+    cost_category_id: uuid.UUID | None = Field(primary_key=True, alias="СтатьяЗатрат")
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     supplier_id: uuid.UUID | None = Field(alias="Поставщик")
     amount: Decimal | None = Field(alias="СуммаСтавка")
-    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
     __table_args__ =(
         Index("ix_de_goods_doc_id", "goods_doc_id"),
@@ -325,7 +324,6 @@ class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     cost_category_id: uuid.UUID = Field(primary_key=True, alias="СтатьяЗатрат")
     is_previous_period: bool | None = Field(alias="ЭтоРасходПрошлогоПериода")
     amount: Decimal | None = Field(alias="СуммаUSD")
-    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
     __table_args__ = (
         {"postgresql_partition_by": "RANGE (date)"},)
@@ -342,11 +340,10 @@ class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
     date: datetime = Field(primary_key=True, alias="Период")
     movement_type: str | None = Field(alias="ВидДвижения")
     organization_id: uuid.UUID | None = Field(alias="Организация")
-    cost_category_id: uuid.UUID | None = Field(alias="СтатьяЗатрат")
+    cost_category_id: uuid.UUID | None = Field(primary_key=True, alias="СтатьяЗатрат")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     amount: Decimal | None = Field(alias="СуммаUSD")
     storno: bool | None = Field(alias="Сторно")
-    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
     __table_args__ = (
         Index("ix_we_department_id", "department_id"),
@@ -367,7 +364,6 @@ class Receipts(TimestampMixin, BaseModelConfig, table=True):
     shop_address: str | None = Field(alias="АдресМагазинаНаименование", max_length=200)
     shop_phone: str | None = Field(alias="ТелефонМагазина", max_length=50)
     shop_name: str | None = Field(alias="НаименованиеМагазина", max_length=100)
-    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
 
 class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
@@ -379,6 +375,17 @@ class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
 
     receipt_id: uuid.UUID = Field(primary_key=True, alias="СсылкаДокумента")
     goods_id: uuid.UUID = Field(primary_key=True, alias="Товар")
+
+
+class DeletedObject(BaseModelConfig, table=True):
+    """
+    Документ.тп_ПеремещениеТовара.Товары
+    """
+    __tablename__ = "deleted_object"
+
+    object_id: uuid.UUID = Field(primary_key=True)
+    name_metafata: str = Field(nullable=False)
+
 
 # Модели таблиц для вычисления
 
