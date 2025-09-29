@@ -22,4 +22,5 @@ REGISTRY = {
     "МестонахождениеТовара": models.GoodsLocation,
     "ОбщиеЗатраты": models.GeneralExpenses,
     "СкладскиеЗатраты": models.WarehouseExpenses,
+    "ТП_ДанныеНаУдаление": models.DeletedObject
 }

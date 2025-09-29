@@ -383,8 +383,8 @@ class DeletedObject(BaseModelConfig, table=True):
     """
     __tablename__ = "deleted_object"
 
-    object_id: uuid.UUID = Field(primary_key=True)
-    name_metafata: str = Field(nullable=False)
+    object_id: uuid.UUID = Field(primary_key=True, alias="Данные")
+    name_metafata: str = Field(primary_key=True, alias="НаименованиеМетаданных")
 
 
 # Модели таблиц для вычисления

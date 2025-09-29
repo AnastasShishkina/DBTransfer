@@ -1,6 +1,10 @@
 import json
 from pathlib import Path
 
+from sqlalchemy import text
+
+from src.db.db import engine
+from src.db.models import dev_drop_all_tables
 from src.handlers.handel_message import handle_json
 # tovary_random_sum.json
 # "ПрямыеРасходы (2).json"
@@ -13,6 +17,12 @@ def main():
         json_data = json.load(f)
     handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
 
+def delete_temp_tables(engine) -> None:
+    q = text("DROP TABLE IF EXISTS alembic_version")
+    with engine.begin() as conn:
+        conn.execute(q, {})
 
 if __name__ == "__main__":
-    main()
+    dev_drop_all_tables(engine)
+    delete_temp_tables(engine)
+    # main()

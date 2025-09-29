@@ -1,8 +1,8 @@
-"""init schema
+"""init
 
-Revision ID: a8b98d8e17a9
+Revision ID: 15eb4d214f80
 Revises: 
-Create Date: 2025-09-23 13:20:41.163426
+Create Date: 2025-09-29 16:40:43.731636
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a8b98d8e17a9'
+revision: str = '15eb4d214f80'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -73,6 +73,11 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('deleted_object',
+    sa.Column('object_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
+    sa.Column('name_metafata', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.PrimaryKeyConstraint('object_id', 'name_metafata')
+    )
     op.create_table('departments',
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("TIMEZONE('UTC', now())"), nullable=False),
     sa.Column('id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
@@ -87,12 +92,12 @@ def upgrade() -> None:
     sa.Column('date', sa.DateTime(), nullable=False),
     sa.Column('registrar_type', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('goods_doc_type', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=True),
-    sa.Column('cost_category_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
+    sa.Column('cost_category_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
     sa.Column('route_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('department_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('supplier_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('amount', sa.Numeric(), nullable=True),
-    sa.PrimaryKeyConstraint('registrar_id', 'goods_doc_id', 'date', 'registrar_type'),
+    sa.PrimaryKeyConstraint('registrar_id', 'goods_doc_id', 'date', 'registrar_type', 'cost_category_id'),
     postgresql_partition_by='RANGE (date)'
     )
     op.create_index('ix_de_goods_doc_id', 'direct_expenses', ['goods_doc_id'], unique=False)
@@ -214,6 +219,13 @@ def upgrade() -> None:
     sa.Column('in_city_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('telegram_chats',
+    sa.Column('telegram_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('phone_number', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('language', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.PrimaryKeyConstraint('telegram_id')
+    )
     op.create_table('transfers',
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("TIMEZONE('UTC', now())"), nullable=False),
     sa.Column('id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
@@ -248,11 +260,11 @@ def upgrade() -> None:
     sa.Column('date', sa.DateTime(), nullable=False),
     sa.Column('movement_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('organization_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
-    sa.Column('cost_category_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
+    sa.Column('cost_category_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
     sa.Column('department_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('amount', sa.Numeric(), nullable=True),
     sa.Column('storno', sa.Boolean(), nullable=True),
-    sa.PrimaryKeyConstraint('registrar_id', 'date'),
+    sa.PrimaryKeyConstraint('registrar_id', 'date', 'cost_category_id'),
     postgresql_partition_by='RANGE (date)'
     )
     op.create_index('ix_we_department_id', 'warehouse_expenses', ['department_id'], unique=False)
@@ -284,6 +296,7 @@ def downgrade() -> None:
     op.drop_table('transports')
     op.drop_index('ix_tr_date', table_name='transfers')
     op.drop_table('transfers')
+    op.drop_table('telegram_chats')
     op.drop_table('routes')
     op.drop_table('receipts')
     op.drop_table('package_types')
@@ -303,6 +316,7 @@ def downgrade() -> None:
     op.drop_index('ix_de_goods_doc_id', table_name='direct_expenses')
     op.drop_table('direct_expenses')
     op.drop_table('departments')
+    op.drop_table('deleted_object')
     op.drop_table('countries')
     op.drop_table('counterparties')
     op.drop_table('cost_categories')
