@@ -23,8 +23,6 @@ ALLOC_DIRECT_EXPENSES_SQL = """
         JOIN transfers AS tf ON tf.id = gt.transfer_id
         JOIN warehouses AS wh ON tf.out_warehouse_id = wh.id
         WHERE gd.amount IS NOT NULL
-		AND (de.is_deleted is NULL or de.is_deleted = 'False')
-		AND (tf.is_deleted is NULL or tf.is_deleted = 'False')
         AND de.date >= :mstart AND de.date < :mnext
         ;
 """
@@ -49,8 +47,6 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
 	JOIN transfers AS tf ON tf.id =  gl.registrar_id
     WHERE gl.goods_status = 2  -- отправление
       AND gd.amount IS NOT NULL  
-	  AND (tf.is_deleted is NULL or tf.is_deleted = 'False')
-	  AND (we.is_deleted is NULL or we.is_deleted = 'False')
       AND we.date >= :mstart AND we.date < :mnext
       AND gl.date >= :mstart AND gl.date < :mnext   
 """
@@ -79,8 +75,6 @@ ALLOC_GENERAL_EXPENSES_SQL = """
     WHERE gd.amount IS NOT NULL
       AND cn_out.name = 'КИТАЙ'
       AND cn_in.name <> 'КИТАЙ'
-	  AND (tf.is_deleted is NULL or tf.is_deleted = 'False')
-	  AND (ge.is_deleted is NULL or ge.is_deleted = 'False')
 	  AND ge.date >= :mstart AND ge.date < :mnext
     ;
 
@@ -162,7 +156,6 @@ def create_temp_table_key(conn, table_name: str, mstart: date, mnext: date) -> N
                 amount AS total_amount
                 FROM {table_name}
                 WHERE date >= '{mstart}' AND date < '{mnext}'
-                AND (is_deleted is NULL or is_deleted = 'False')
            """
     conn.exec_driver_sql(create_sql)
 
