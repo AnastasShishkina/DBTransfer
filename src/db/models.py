@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from pydantic import validator
-from sqlalchemy import Column, DateTime, UniqueConstraint, text, Index
+from sqlalchemy import Column, DateTime, text, Index
 from sqlmodel import Field, SQLModel
 
 
@@ -161,6 +161,7 @@ class Transfers(TimestampMixin, BaseModelConfig, table=True):
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     transport_id: uuid.UUID | None = Field(alias="ТранспортноеСредство")
     document_id: uuid.UUID | None = Field(alias="ДокументОснование")
+    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
     __table_args__ = (
         Index("ix_tr_date", "date"),
         {"postgresql_partition_by": "RANGE (date)"},
@@ -305,6 +306,7 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     supplier_id: uuid.UUID | None = Field(alias="Поставщик")
     amount: Decimal | None = Field(alias="СуммаСтавка")
+    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
     __table_args__ =(
         Index("ix_de_goods_doc_id", "goods_doc_id"),
@@ -323,6 +325,8 @@ class GeneralExpenses(TimestampMixin, BaseModelConfig, table=True):
     cost_category_id: uuid.UUID = Field(primary_key=True, alias="СтатьяЗатрат")
     is_previous_period: bool | None = Field(alias="ЭтоРасходПрошлогоПериода")
     amount: Decimal | None = Field(alias="СуммаUSD")
+    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
+
     __table_args__ = (
         {"postgresql_partition_by": "RANGE (date)"},)
 
@@ -342,6 +346,8 @@ class WarehouseExpenses(TimestampMixin, BaseModelConfig, table=True):
     department_id: uuid.UUID | None = Field(alias="Подразделение")
     amount: Decimal | None = Field(alias="СуммаUSD")
     storno: bool | None = Field(alias="Сторно")
+    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
+
     __table_args__ = (
         Index("ix_we_department_id", "department_id"),
         {"postgresql_partition_by": "RANGE (date)"},
@@ -361,6 +367,7 @@ class Receipts(TimestampMixin, BaseModelConfig, table=True):
     shop_address: str | None = Field(alias="АдресМагазинаНаименование", max_length=200)
     shop_phone: str | None = Field(alias="ТелефонМагазина", max_length=50)
     shop_name: str | None = Field(alias="НаименованиеМагазина", max_length=100)
+    is_deleted: bool | None = Field(alias="ПометкаНаУдаление")
 
 
 class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
@@ -392,6 +399,16 @@ class DmGoodsExpenseAlloc(SQLModel, table=True):
         Index("ix_dm_alloc_goods", "goods_id", "date"),
         {"postgresql_partition_by": "RANGE (date)"},
     )
+
+
+class TelegramChats(SQLModel, table=True):
+    __tablename__ = "telegram_chats"
+
+    telegram_id: str = Field(primary_key=True)
+    phone_number: str | None  = Field()
+    username: str | None  = Field()
+    language: str | None  = Field()
+
 
 def create_all_tables(engine):
     SQLModel.metadata.create_all(engine)

@@ -1,0 +1,13 @@
+[Unit]
+Description=DBTransfer FastAPI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/user/SoftTeam/DBTransfer
+ExecStart=/home/user/SoftTeam/DBTransfer/.venv/bin/uvicorn src.main:app --host 127.0.0.1 --port 8000 --proxy-headers
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

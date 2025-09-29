@@ -17,11 +17,7 @@ class Settings(BaseSettings):
     def DATABASE_URL(self):
         return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    # @property
-    # def RABBITMG_CONN_PARAMS(self):
-    #     return ConnectionParameters(host=self.RMQ_HOST, port=self.RMQ_PORT)
 
-    #
     @property
     def LOG_LEVEL(self):
         return self.LOGGER_LEVEL

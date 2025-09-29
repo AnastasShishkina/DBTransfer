@@ -1,13 +1,10 @@
 import uuid
-from typing import Any
 
-from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import Table, MetaData, insert, select, and_, exists
-from sqlmodel import Session, create_engine
+from sqlmodel import create_engine
 
 from src.config import settings
-from src.utils import _chunked, timeit
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)  # echo=True
 

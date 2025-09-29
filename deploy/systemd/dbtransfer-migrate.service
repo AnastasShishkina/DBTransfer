@@ -1,0 +1,8 @@
+[Unit]
+Description=DBTransfer Alembic upgrade
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/user/SoftTeam/DBTransfer
+ExecStart=/home/user/SoftTeam/DBTransfer/.venv/bin/alembic -c /home/user/SoftTeam/DBTransfer/src/migrations/alembic.ini upgrade head
+ExecStart=/home/user/SoftTeam/DBTransfer/.venv/bin/python -c "from src.db.utils.partition_manager import create_year_partitions; create_year_partitions()"
