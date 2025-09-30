@@ -15,7 +15,7 @@ ALLOC_DIRECT_EXPENSES_SQL = """
             t_de.cost_category_id,
             wh.department_id,
             t_de.date,
-            TRUNC(t_de.total_amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY t_de.registrar_id, t_de.cost_category_id), 0), 2) AS amount
+            ROUND(t_de.total_amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY t_de.registrar_id, t_de.cost_category_id), 0), 2) AS amount
         FROM tmp_de_key_amount AS t_de
         JOIN direct_expenses AS de ON (t_de.registrar_id = de.registrar_id AND t_de.cost_category_id = de.cost_category_id)
         JOIN goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
@@ -38,7 +38,7 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
         we.cost_category_id,
         we.department_id,
         we.date,
-        TRUNC(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), 2) AS amount
+        ROUND(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), 2) AS amount
     FROM warehouse_expenses AS we
     JOIN departments AS de ON de.id = we.department_id
     JOIN warehouses AS wh ON wh.department_id = de.id
@@ -62,7 +62,7 @@ ALLOC_GENERAL_EXPENSES_SQL = """
         ge.cost_category_id,
         wh_out.department_id,
         ge.date,
-        TRUNC(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), 2) AS amount
+        ROUND(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), 2) AS amount
     FROM general_expenses AS ge
     JOIN transfers AS tr
       ON tr.date >= :mstart AND tr.date < :mnext
