@@ -75,8 +75,8 @@ def upgrade() -> None:
     )
     op.create_table('deleted_object',
     sa.Column('object_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
-    sa.Column('name_metafata', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.PrimaryKeyConstraint('object_id', 'name_metafata')
+    sa.Column('name_metadata', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.PrimaryKeyConstraint('object_id', 'name_metadata')
     )
     op.create_table('departments',
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("TIMEZONE('UTC', now())"), nullable=False),

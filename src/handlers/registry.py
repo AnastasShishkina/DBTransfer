@@ -1,3 +1,7 @@
+from typing import NamedTuple
+
+from sqlmodel import SQLModel
+
 import  src.db.models as models
 
 REGISTRY = {
@@ -23,4 +27,22 @@ REGISTRY = {
     "ОбщиеЗатраты": models.GeneralExpenses,
     "СкладскиеЗатраты": models.WarehouseExpenses,
     "ТП_ДанныеНаУдаление": models.DeletedObject
+}
+
+class CascadeRule(NamedTuple):
+    model: type[SQLModel]
+    column_name: str  # как называется столбец в дочерней таблице
+
+
+CASCADE_DELETED_MAP: dict[str, list[CascadeRule]] = {
+    "Документ.тп_ПеремещениеТовара": [
+        CascadeRule(model=models.GoodsTransfers, column_name="transfer_id"),
+        CascadeRule(model=models.GoodsLocation, column_name="registrar_id"),
+        CascadeRule(model=models.DirectExpenses, column_name="goods_doc_id"),
+    ],
+    "Документ.тп_ПриемТовара": [
+        CascadeRule(model=models.GoodsReceipts, column_name="receipt_id"),
+        CascadeRule(model=models.Goods, column_name="goods_receipt"),
+        CascadeRule(model=models.GoodsLocation, column_name="registrar_id"),
+    ],
 }

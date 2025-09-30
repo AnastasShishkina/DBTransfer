@@ -1,10 +1,14 @@
 import uuid
 
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy import Table, MetaData, insert, select, and_, exists
+from sqlalchemy import Table, MetaData, insert, select, and_, exists, inspect
 from sqlmodel import create_engine
 
 from src.config import settings
+from src.db.models import DeletedObject
+from src.handlers.registry import REGISTRY, CASCADE_DELETED_MAP
+from sqlalchemy import delete as sa_delete
+from src.logger.logger import logger
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)  # echo=True
 
@@ -64,3 +68,29 @@ def replace_scope(dataModel, rows):
         conn.execute(insert(target_tbl).from_select(insert_cols, sel))
 
         conn.exec_driver_sql(f"DROP TABLE IF EXISTS {tmp_qname};")
+
+
+def delete_with_cascade():
+    with engine.begin() as conn:
+        logger.debug("Старт удаления")
+        stmt = select(DeletedObject.object_id, DeletedObject.name_metadata)
+        rows = conn.execute(stmt).all()
+        for object_id, name_metadata in rows:
+            logger.info("Удаляем %s %s", str(object_id), str(name_metadata))
+            dataModel = REGISTRY.get(name_metadata)
+            # удаляем  связные объекты
+            for rule in CASCADE_DELETED_MAP.get(name_metadata, []):
+                logger.debug("rule.model %s %s",str(rule.model),str(rule.column_name))
+                child_table = rule.model
+                column = getattr(child_table, rule.column_name)
+                conn.execute(sa_delete(child_table).where(column == object_id))
+
+            # удаляем  объект (по PK или по полю удаления т.к. поле должно быть одно)
+            pk_column = (getattr(dataModel, "__scope_delete_cols__", None)
+                             or next(iter(inspect(dataModel).primary_key)))
+
+            conn.execute(sa_delete(dataModel).where(pk_column == object_id))
+
+            # удаляем из таблицы удаленных объектов
+            pk_column = DeletedObject.object_id
+            conn.execute(sa_delete(DeletedObject).where(pk_column == object_id))

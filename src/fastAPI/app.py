@@ -6,7 +6,7 @@ import json
 from fastapi import FastAPI, HTTPException, Query
 
 from src.db.dags import recalc_period_by_months
-from src.db.db import engine
+from src.db.db import engine, delete_with_cascade
 from src.handlers.handel_message import handle_json
 
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +23,7 @@ async def load_data(json_data: List[Dict[str, Any]],):
     """
     try:
         handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
+        delete_with_cascade()
         return {"status": "ok", "detail": "Данные успешно обработаны", "items": len(json_data), }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Ошибка обработки: {e}")
