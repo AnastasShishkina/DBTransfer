@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
-from src.logger.logger import logger
+from src.logger.logger import setup_logging
+setup_logging()
 from src.handlers.handel_message import handle_json
-
-
+import logging
+log = logging.getLogger("app")
 FILES_PATH = Path(__file__).parent.parent / "data" # папка с json файлами
 
 
@@ -14,9 +15,9 @@ def firstLoadData(path):
                 json_data = json.load(f)
 
             handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
-            logger.info("Файл успешно обработан: %s", file_path.name)
+            log.info("Файл успешно обработан: %s", file_path.name)
         except Exception as e:
-            logger.error("Ошибка в обработке файла : %s , %s ", file_path.name, e)
+            log.error("Ошибка в обработке файла : %s , %s ", file_path.name, e)
 
 
 

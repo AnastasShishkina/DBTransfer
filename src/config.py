@@ -26,5 +26,21 @@ class Settings(BaseSettings):
         env_file = str(ROOT / ".env")
         env_file_encoding = "utf-8"
 
+class Basic_auth(BaseSettings):
+    BASIC_USER: str
+    BASIC_PASS: str
+
+    @property
+    def USER(self):
+        return self.BASIC_USER
+
+    @property
+    def PASS(self):
+        return self.BASIC_PASS
+
+    class Config:
+        env_file = str(ROOT / ".env")
+        env_file_encoding = "utf-8"
 
 settings = Settings()
+basic_auth = Basic_auth()

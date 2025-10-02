@@ -2,8 +2,9 @@ import json
 
 from src.db.db import replace_scope
 from src.handlers.registry import REGISTRY
-from src.logger.logger import logger
+import logging
 
+log = logging.getLogger("app")
 
 def handle_json(body):
     # TODO: минимальная проврека на формат JSON
@@ -15,9 +16,9 @@ def handle_json(body):
         dataModel = REGISTRY.get(nameMetaData)
 
         if not dataModel:
-            logger.error("Нет в регистре. Добавь связку метаданных и таблицы БД в REGISTRY", nameMetaData)
+            log.error("Нет в регистре. Добавь связку метаданных и таблицы БД в REGISTRY", nameMetaData)
             continue
-        logger.debug("Обработка %s , количество строк %i", nameMetaData, len(data))
+        log.debug("Обработка %s , количество строк %i", nameMetaData, len(data))
         replace_scope(dataModel, data)
 
 

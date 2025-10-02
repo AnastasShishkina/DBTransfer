@@ -8,10 +8,10 @@ from src.config import settings
 from src.db.models import DeletedObject
 from src.handlers.registry import REGISTRY, CASCADE_DELETED_MAP
 from sqlalchemy import delete as sa_delete
-from src.logger.logger import logger
+import logging
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)  # echo=True
-
+log = logging.getLogger("app")
 
 def replace_scope(dataModel, rows):
     """
@@ -72,15 +72,15 @@ def replace_scope(dataModel, rows):
 
 def delete_with_cascade():
     with engine.begin() as conn:
-        logger.debug("Старт удаления")
+        log.debug("Старт удаления")
         stmt = select(DeletedObject.object_id, DeletedObject.name_metadata)
         rows = conn.execute(stmt).all()
         for object_id, name_metadata in rows:
-            logger.info("Удаляем %s %s", str(object_id), str(name_metadata))
+            log.info("Удаляем %s %s", str(object_id), str(name_metadata))
             dataModel = REGISTRY.get(name_metadata)
             # удаляем  связные объекты
             for rule in CASCADE_DELETED_MAP.get(name_metadata, []):
-                logger.debug("rule.model %s %s",str(rule.model),str(rule.column_name))
+                log.debug("rule.model %s %s",str(rule.model),str(rule.column_name))
                 child_table = rule.model
                 column = getattr(child_table, rule.column_name)
                 conn.execute(sa_delete(child_table).where(column == object_id))

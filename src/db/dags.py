@@ -1,9 +1,13 @@
 from datetime import datetime, date
+from decimal import Decimal
 from typing import Optional, Iterator
 
 from sqlalchemy import text, Engine
 from src.db.db import engine
 from src.utils import iter_months
+
+PRECISION = 2  # количество знаков после запятой
+INC = Decimal(1) / (Decimal(10) ** PRECISION)  # шаг инкремента (0.01 при PRECISION=2)
 
 # Распределение прямых расходов
 ALLOC_DIRECT_EXPENSES_SQL = """
@@ -15,7 +19,7 @@ ALLOC_DIRECT_EXPENSES_SQL = """
             t_de.cost_category_id,
             wh.department_id,
             t_de.date,
-            ROUND(t_de.total_amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY t_de.registrar_id, t_de.cost_category_id), 0), 2) AS amount
+            ROUND(t_de.total_amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY t_de.registrar_id, t_de.cost_category_id), 0), :precision) AS amount
         FROM tmp_de_key_amount AS t_de
         JOIN direct_expenses AS de ON (t_de.registrar_id = de.registrar_id AND t_de.cost_category_id = de.cost_category_id)
         JOIN goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
@@ -38,7 +42,7 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
         we.cost_category_id,
         we.department_id,
         we.date,
-        ROUND(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), 2) AS amount
+        ROUND(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), :precision) AS amount
     FROM warehouse_expenses AS we
     JOIN departments AS de ON de.id = we.department_id
     JOIN warehouses AS wh ON wh.department_id = de.id
@@ -62,10 +66,10 @@ ALLOC_GENERAL_EXPENSES_SQL = """
         ge.cost_category_id,
         wh_out.department_id,
         ge.date,
-        ROUND(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), 2) AS amount
+        ROUND(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), :precision) AS amount
     FROM general_expenses AS ge
     JOIN transfers AS tr
-      ON tr.date >= :mstart AND tr.date < :mnext
+      ON tr.date >= :mstart AND tr.date < :mnext AND tr.type_transfer = 'Погрузка в машину'
     JOIN warehouses AS wh_out ON tr.out_warehouse_id = wh_out.id
     JOIN countries  AS cn_out ON wh_out.country_id = cn_out.id
     JOIN warehouses AS wh_in  ON tr.in_warehouse_id = wh_in.id
@@ -112,6 +116,97 @@ UPDATE_ALLOC_EXPENSES_SQL ="""
     WHERE u.ctid     = t_s.ctid ;
                            """
 
+CREATE_VIEWS_SQL = """
+-- v_part: ранжируем товары внутри ключа и считаем агрегаты
+CREATE TEMP VIEW v_part AS
+SELECT
+    t.type_expense,
+    t.registrar_id,
+    t.cost_category_id,
+    t.goods_id,
+    t.amount,  -- уже округлено до PRECISION при формировании tmp_table
+    ROW_NUMBER() OVER (
+        PARTITION BY t.type_expense, t.registrar_id, t.cost_category_id
+        ORDER BY t.amount DESC--, t.goods_id
+    ) AS rn,
+    COUNT(*) OVER (
+        PARTITION BY t.type_expense, t.registrar_id, t.cost_category_id
+    ) AS n,
+    SUM(t.amount) OVER (
+        PARTITION BY t.type_expense, t.registrar_id, t.cost_category_id
+    ) AS sum_rounded
+FROM tmp_table t;
+
+-- v_agg: исходная (требуемая) сумма по ключу
+CREATE TEMP VIEW v_agg AS
+SELECT
+    p.type_expense,
+    p.registrar_id,
+    p.cost_category_id,
+    MAX(p.sum_rounded) AS sum_rounded,
+    k.total_amount     AS total_amount
+FROM v_part p
+JOIN tmp_de_key_amount k
+  ON k.registrar_id     = p.registrar_id
+ AND k.cost_category_id = p.cost_category_id
+GROUP BY p.type_expense, p.registrar_id, p.cost_category_id, k.total_amount;
+"""
+
+UPDATE_WITH_VIEWS_SQL = """
+WITH
+dist AS (
+    SELECT
+        p.type_expense,
+        p.registrar_id,
+        p.cost_category_id,
+        p.goods_id,
+        p.amount,
+        p.rn,
+        p.n,
+        a.total_amount,
+        a.sum_rounded,
+        (a.total_amount - a.sum_rounded)::numeric AS err,  -- предполагаем err >= 0
+        (:inc)::numeric AS inc
+    FROM v_part p
+    JOIN v_agg  a
+      ON a.type_expense     = p.type_expense
+     AND a.registrar_id     = p.registrar_id
+     AND a.cost_category_id = p.cost_category_id
+),
+calc AS (
+    SELECT
+        d.*,
+        FLOOR(ABS(d.err) / d.inc)::bigint AS k,  -- число «шагов» по inc
+        GREATEST(ABS(d.err) - (FLOOR(ABS(d.err) / d.inc)::numeric * d.inc), 0)::numeric AS extra
+        -- extra ∈ [0, inc)
+    FROM dist d
+),
+incr AS (
+    SELECT
+        c.type_expense,
+        c.registrar_id,
+        c.cost_category_id,
+        c.goods_id,
+        (
+          ((c.k / c.n) * c.inc) +                                     -- базовая равная раздача
+          (CASE WHEN (c.k % c.n) >= c.rn THEN c.inc ELSE 0 END) +      -- «хвост» шагов первым (k % n) товарам
+          (CASE WHEN c.rn = 1 THEN c.extra ELSE 0 END)                 -- дробный остаток целиком самому дорогому
+        )::numeric AS delta
+    FROM calc c
+)
+UPDATE tmp_table u
+SET amount = (u.amount + i.delta)  -- только плюсуем
+FROM incr i
+WHERE u.type_expense     = i.type_expense
+  AND u.registrar_id     = i.registrar_id
+  AND u.cost_category_id = i.cost_category_id
+  AND u.goods_id         = i.goods_id;
+"""
+
+DROP_VIEWS_SQL = """
+DROP VIEW IF EXISTS v_agg;
+DROP VIEW IF EXISTS v_part;
+"""
 
 DELETE_ALLOC_EXPENSES_SQL = """
         DELETE FROM dm_goods_expense_alloc d
@@ -178,10 +273,21 @@ def replace_allocations_for_month(engine: Engine, table_name: str, create_sql_mo
     """
     with engine.begin() as conn:
         create_temp_table_key(conn, table_name, mstart, mnext)
-        conn.execute(text(create_sql_month), {"mstart": mstart, "mnext": mnext})
-        conn.execute(text(UPDATE_ALLOC_EXPENSES_SQL))
+        conn.execute(text(create_sql_month), {"mstart": mstart, "mnext": mnext, "precision": PRECISION})
+
+        # создать вьюшки
+        conn.execute(text(CREATE_VIEWS_SQL))
+
+        # «только плюс» корректировка с твоим шагом инкремента
+        conn.execute(text(UPDATE_WITH_VIEWS_SQL), {"inc": str(INC)})
+
+        # убрать вьюшки
+        conn.execute(text(DROP_VIEWS_SQL))
+
+        # перезалить агрегат
         conn.execute(text(DELETE_ALLOC_EXPENSES_SQL), {"mstart": mstart, "mnext": mnext})
         conn.execute(text(INSERT_ALLOC_EXPENSES_SQL))
+
     mark_success(engine, table_name)
 
 

@@ -156,11 +156,13 @@ class Transfers(TimestampMixin, BaseModelConfig, table=True):
     id: uuid.UUID = Field(primary_key=True, alias="Ссылка")
     date: datetime = Field(primary_key=True, alias="Дата", nullable=False)
     number: str | None = Field(alias="Номер", max_length=50)
+    type_transfer: str | None = Field(alias="ВидПеремещения", max_length=50)
     out_warehouse_id: uuid.UUID | None = Field(alias="СкладОтправитель")
     in_warehouse_id: uuid.UUID | None = Field(alias="СкладПолучатель")
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     transport_id: uuid.UUID | None = Field(alias="ТранспортноеСредство")
     document_id: uuid.UUID | None = Field(alias="ДокументОснование")
+    cargo_category_id: uuid.UUID | None = Field(alias="КатегорияГруза")
 
     __table_args__ = (
         Index("ix_tr_date", "date"),
@@ -183,16 +185,31 @@ class GoodsTransfers(TimestampMixin, BaseModelConfig, table=True):
             Index("ix_gt_goods_id", "goods_id"),
         )
 
+class CargoCategory(TimestampMixin, BaseModelConfig, table=True):
+    """
+    Справочник.тп_КатегорияГруза
+    """
+    __tablename__ = "cargo_categories"
+
+    id: uuid.UUID = Field(primary_key=True, alias="Ссылка")
+    code: str | None = Field(alias="Код", max_length=50)
+    name: str | None = Field(alias="Наименование", max_length=100)
+
 
 class GoodsTypes(TimestampMixin, BaseModelConfig, table=True):
     """
     Справочник.тп_ВидыТоваров
+    Это иерархический справочник
+    parent_id это ссылка на id родительской записи
     """
     __tablename__ = "goods_types"
 
     id: uuid.UUID = Field(primary_key=True, alias="Ссылка")
     code: str | None = Field(alias="Код", max_length=50)
     name: str | None = Field(alias="Наименование", max_length=50)
+    is_group: bool| None = Field(alias="ЭтоГруппа")
+    cargo_category_id: uuid.UUID | None = Field(alias="КатегорияГруза")
+    parent_id: uuid.UUID | None = Field(alias="Родитель")
 
 
 class Goods(TimestampMixin, BaseModelConfig, table=True):
@@ -203,9 +220,9 @@ class Goods(TimestampMixin, BaseModelConfig, table=True):
 
     id: uuid.UUID = Field(primary_key=True, alias="Товар")
     barcode: str | None = Field(alias="ШК")
-    goods_receipt: uuid.UUID | None = Field(alias="ПриемТовара")
-    client_id: str | None = Field(alias="Клиент")
-    package_type: uuid.UUID | None = Field(alias="ТипУпаковки")
+    receipt_id: uuid.UUID | None = Field(alias="ПриемТовара")
+    client_id: uuid.UUID | None = Field(alias="Клиент")
+    package_type_id: uuid.UUID | None = Field(alias="ТипУпаковки")
     goods_type_id: uuid.UUID | None = Field(alias="ВидТовара")
     volume: float | None = Field(alias="Объем")
     weight: float | None = Field(alias="Вес")
@@ -224,7 +241,6 @@ class Goods(TimestampMixin, BaseModelConfig, table=True):
     order_number: str | None = Field(alias="НомерОрдера")
     days_in_transit: int | None = Field(alias="ДнейВПути")
     arrival_date: datetime | None = Field(alias="ДатаПрибытияИлиТекущая")
-
     total_amount: Decimal | None = Field(alias="СуммаВсего")
 
 class PackageTypes(TimestampMixin, BaseModelConfig, table=True):
@@ -304,7 +320,6 @@ class DirectExpenses(TimestampMixin, BaseModelConfig, table=True):
     cost_category_id: uuid.UUID | None = Field(primary_key=True, alias="СтатьяЗатрат")
     route_id: uuid.UUID | None = Field(alias="Маршрут")
     department_id: uuid.UUID | None = Field(alias="Подразделение")
-    supplier_id: uuid.UUID | None = Field(alias="Поставщик")
     amount: Decimal | None = Field(alias="СуммаСтавка")
 
     __table_args__ =(
@@ -368,7 +383,7 @@ class Receipts(TimestampMixin, BaseModelConfig, table=True):
 
 class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
     """
-    Документ.тп_ПеремещениеТовара.Товары
+    Документ.тп_ПриемТовара.Товары
     """
     __tablename__ = "goods_receipts"
     __scope_delete_cols__ = ["receipt_id"]
@@ -379,7 +394,7 @@ class GoodsReceipts(TimestampMixin, BaseModelConfig, table=True):
 
 class DeletedObject(BaseModelConfig, table=True):
     """
-    Документ.тп_ПеремещениеТовара.Товары
+    ТП_ДанныеНаУдаление
     """
     __tablename__ = "deleted_object"
 

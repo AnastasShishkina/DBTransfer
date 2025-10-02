@@ -1,3 +1,5 @@
+from src.logger.logger import setup_logging
+setup_logging()
 import uvicorn
 from src.fastAPI import app
 

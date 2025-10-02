@@ -17,6 +17,7 @@ REGISTRY = {
     "Справочник.тп_Клиенты": models.Clients,
     "Справочник.тп_ТипыУпаковок": models.PackageTypes,
     "Справочник.Контрагенты": models.Counterparties,
+    "Справочник.тп_КатегорияГруза": models.CargoCategory,
     "Документ.тп_ПеремещениеТовара": models.Transfers,
     "Документ.тп_ПеремещениеТовара.Товары": models.GoodsTransfers,
     "Документ.тп_ПриемТовара": models.Receipts,
@@ -26,7 +27,7 @@ REGISTRY = {
     "МестонахождениеТовара": models.GoodsLocation,
     "ОбщиеЗатраты": models.GeneralExpenses,
     "СкладскиеЗатраты": models.WarehouseExpenses,
-    "ТП_ДанныеНаУдаление": models.DeletedObject
+    "ТП_ДанныеНаУдаление": models.DeletedObject,
 }
 
 class CascadeRule(NamedTuple):
@@ -42,7 +43,7 @@ CASCADE_DELETED_MAP: dict[str, list[CascadeRule]] = {
     ],
     "Документ.тп_ПриемТовара": [
         CascadeRule(model=models.GoodsReceipts, column_name="receipt_id"),
-        CascadeRule(model=models.Goods, column_name="goods_receipt"),
+        CascadeRule(model=models.Goods, column_name="receipt_id"),
         CascadeRule(model=models.GoodsLocation, column_name="registrar_id"),
     ],
 }
