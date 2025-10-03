@@ -4,12 +4,13 @@ from datetime import date
 from typing import Any, Dict, List
 import json
 
-from fastapi import FastAPI, HTTPException, Query,  Depends, status
+from fastapi import FastAPI, HTTPException, Query, Depends, status, BackgroundTasks
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from starlette.responses import JSONResponse
 
 from src.db.dags import recalc_period_by_months
 from src.db.db import engine, delete_with_cascade
-from src.handlers.handel_message import handle_json
+from src.handlers.handel_message import handle_json, MetadataNotRegistered, DataFormatError
 from src.config import basic_auth
 
 from fastapi.staticfiles import StaticFiles
@@ -34,7 +35,7 @@ def get_current_user(credentials: Annotated[HTTPBasicCredentials, Depends(securi
 
 
 @app.post("/load_data", summary="Принять JSON-список и передать в handle_json")
-async def load_data(
+def load_data(
         json_data: List[Dict[str, Any]],
         _user: str = Depends(get_current_user),
 ):
@@ -43,12 +44,27 @@ async def load_data(
     """
     try:
         handle_json(json.dumps(json_data, ensure_ascii=False).encode("utf-8"))
+        log.info("Данные успешно обработаны: %s", len(json_data))
         delete_with_cascade()
         return {"status": "ok", "detail": "Данные успешно обработаны", "items": len(json_data), }
+
+    except MetadataNotRegistered as e:
+        log.warning("Ошибка метаданных: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except DataFormatError as e:
+        log.warning("Ошибка формата данных: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except HTTPException:
+        raise
+
     except Exception as e:
-        error_message = f"Ошибка обработки: {e}"
-        log.error(error_message)
-        raise HTTPException(status_code=400, detail=error_message)
+        log.exception("Необработанная ошибка в /load_data")
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "detail": str(e)}
+        )
 
 
 @app.post("/costs/recalculate")
