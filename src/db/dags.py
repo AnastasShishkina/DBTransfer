@@ -124,10 +124,10 @@ SELECT
     t.registrar_id,
     t.cost_category_id,
     t.goods_id,
-    t.amount,  -- уже округлено до PRECISION при формировании tmp_table
+    t.amount,
     ROW_NUMBER() OVER (
         PARTITION BY t.type_expense, t.registrar_id, t.cost_category_id
-        ORDER BY t.amount DESC--, t.goods_id
+        ORDER BY t.amount DESC
     ) AS rn,
     COUNT(*) OVER (
         PARTITION BY t.type_expense, t.registrar_id, t.cost_category_id
@@ -137,7 +137,6 @@ SELECT
     ) AS sum_rounded
 FROM tmp_table t;
 
--- v_agg: исходная (требуемая) сумма по ключу
 CREATE TEMP VIEW v_agg AS
 SELECT
     p.type_expense,
@@ -165,20 +164,20 @@ dist AS (
         p.n,
         a.total_amount,
         a.sum_rounded,
-        (a.total_amount - a.sum_rounded)::numeric AS err,  -- предполагаем err >= 0
+        (a.total_amount - a.sum_rounded)::numeric AS err,
+        CASE WHEN (a.total_amount - a.sum_rounded) >= 0 THEN 1 ELSE -1 END AS sgn,
         (:inc)::numeric AS inc
     FROM v_part p
     JOIN v_agg  a
-      ON a.type_expense     = p.type_expense
-     AND a.registrar_id     = p.registrar_id
-     AND a.cost_category_id = p.cost_category_id
+      ON a.type_expense    = p.type_expense
+     AND a.registrar_id    = p.registrar_id
+     AND a.cost_category_id= p.cost_category_id
 ),
 calc AS (
     SELECT
         d.*,
-        FLOOR(ABS(d.err) / d.inc)::bigint AS k,  -- число «шагов» по inc
-        GREATEST(ABS(d.err) - (FLOOR(ABS(d.err) / d.inc)::numeric * d.inc), 0)::numeric AS extra
-        -- extra ∈ [0, inc)
+        FLOOR( (ABS(d.err))::numeric / d.inc )::bigint AS k,
+        GREATEST(ABS(d.err) - (FLOOR( (ABS(d.err))::numeric / d.inc )::numeric * d.inc), 0)::numeric AS extra
     FROM dist d
 ),
 incr AS (
@@ -188,14 +187,16 @@ incr AS (
         c.cost_category_id,
         c.goods_id,
         (
-          ((c.k / c.n) * c.inc) +                                     -- базовая равная раздача
-          (CASE WHEN (c.k % c.n) >= c.rn THEN c.inc ELSE 0 END) +      -- «хвост» шагов первым (k % n) товарам
-          (CASE WHEN c.rn = 1 THEN c.extra ELSE 0 END)                 -- дробный остаток целиком самому дорогому
+          c.sgn * (
+            ((c.k / c.n) * c.inc) +
+            (CASE WHEN (c.k % c.n) >= c.rn THEN c.inc ELSE 0 END) +
+            (CASE WHEN c.rn = 1 THEN c.extra ELSE 0 END)
+          )
         )::numeric AS delta
     FROM calc c
 )
 UPDATE tmp_table u
-SET amount = (u.amount + i.delta)  -- только плюсуем
+SET amount = (u.amount + i.delta)
 FROM incr i
 WHERE u.type_expense     = i.type_expense
   AND u.registrar_id     = i.registrar_id
@@ -307,8 +308,6 @@ def recalc_period_by_months( engine: Engine,  period_start: date, period_end: da
         results.append(
             {
                 "month": mstart.strftime("%Y-%m"),
-                "from": mstart.isoformat(),
-                "to_exclusive": mnext.isoformat(),
                 "status": "ok",
             }
         )
