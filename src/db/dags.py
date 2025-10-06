@@ -245,7 +245,7 @@ def mark_success(engine: Engine, job_name: str, ts: Optional[datetime] = None) -
 def create_temp_table_key(conn, table_name: str, mstart: date, mnext: date) -> None:
     create_sql = f"""
                CREATE TEMP TABLE tmp_de_key_amount ON COMMIT DROP AS
-                SELECT registrar_id, cost_category_id
+                SELECT
                 registrar_id,
                 cost_category_id,
                 date  AS date,
