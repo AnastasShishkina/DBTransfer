@@ -245,13 +245,14 @@ def mark_success(engine: Engine, job_name: str, ts: Optional[datetime] = None) -
 def create_temp_table_key(conn, table_name: str, mstart: date, mnext: date) -> None:
     create_sql = f"""
                CREATE TEMP TABLE tmp_de_key_amount ON COMMIT DROP AS
-                SELECT DISTINCT ON (registrar_id, cost_category_id)
+                SELECT registrar_id, cost_category_id
                 registrar_id,
                 cost_category_id,
                 date  AS date,
-                amount AS total_amount
+                sum(amount) AS total_amount
                 FROM {table_name}
                 WHERE date >= '{mstart}' AND date < '{mnext}'
+                GROUP BY registrar_id, cost_category_id, date
            """
     conn.exec_driver_sql(create_sql)
 
