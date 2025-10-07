@@ -1,10 +1,9 @@
 import secrets
-from typing import Annotated
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Annotated
 import json
 
-from fastapi import FastAPI, HTTPException, Query, Depends, status, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.responses import JSONResponse
 
