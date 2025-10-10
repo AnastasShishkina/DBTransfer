@@ -1,7 +1,7 @@
 import json
 
 from src.db.db import replace_scope
-from src.handlers.registry import REGISTRY
+from src.db.registry import REGISTRY
 import logging
 
 log = logging.getLogger("app")

@@ -2,23 +2,22 @@
 # Распределение прямых расходов
 ALLOC_DIRECT_EXPENSES_SQL = """
     CREATE TEMP TABLE tmp_table ON COMMIT DROP AS
-        SELECT
-            'Прямые расходы' AS type_expense,
-            de.registrar_id,
-            gd.id AS goods_id,
-            de.cost_category_id,
-            wh.department_id,
-            de.date,
-            de.goods_doc_id,  
-            ROUND(de.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY de.registrar_id, de.cost_category_id, de.goods_doc_id), 0), :precision) AS amount
-        FROM direct_expenses AS de 
-        JOIN goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
-        JOIN goods AS gd ON gd.id = gt.goods_id
-        JOIN transfers AS tf ON tf.id = gt.transfer_id
-        JOIN warehouses AS wh ON tf.out_warehouse_id = wh.id
-        WHERE gd.amount IS NOT NULL
-        AND de.date >= :mstart AND de.date < :mnext
-        ;
+    SELECT
+        'Прямые расходы' AS type_expense,
+        de.registrar_id,
+        gd.id AS goods_id,
+        de.cost_category_id,
+        wh.department_id,
+        de.date,
+        de.goods_doc_id,
+        ROUND(de.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY de.registrar_id, de.cost_category_id, de.goods_doc_id), 0), :precision) AS amount
+    FROM reg_direct_expenses AS de
+    JOIN doc_link_goods_transfers AS gt ON gt.transfer_id = de.goods_doc_id
+    JOIN ref_goods AS gd ON gd.id = gt.goods_id
+    JOIN doc_transfers AS tf ON tf.id = gt.transfer_id
+    JOIN ref_warehouses AS wh ON tf.out_warehouse_id = wh.id
+    WHERE gd.amount IS NOT NULL
+      AND de.date >= :mstart AND de.date < :mnext
 """
 
 
@@ -32,16 +31,16 @@ ALLOC_WAREHOUSE_EXPENSES_SQL = """
         we.cost_category_id,
         we.department_id,
         we.date,
-        NULL::uuid AS goods_doc_id, 
+        NULL::uuid AS goods_doc_id,
         ROUND(we.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY we.registrar_id), 0), :precision) AS amount
-    FROM warehouse_expenses AS we
-    JOIN departments AS de ON de.id = we.department_id
-    JOIN warehouses AS wh ON wh.department_id = de.id
-    JOIN goods_location AS gl ON gl.sender_warehouse_id = wh.id
-    JOIN goods AS gd ON gd.id = gl.goods_id
-	JOIN transfers AS tf ON tf.id =  gl.registrar_id
+    FROM reg_warehouse_expenses AS we
+    JOIN ref_departments AS de ON de.id = we.department_id
+    JOIN ref_warehouses AS wh ON wh.department_id = de.id
+    JOIN reg_goods_location AS gl ON gl.sender_warehouse_id = wh.id
+    JOIN ref_goods AS gd ON gd.id = gl.goods_id
+    JOIN doc_transfers AS tf ON tf.id = gl.registrar_id
     WHERE gl.goods_status = 2  -- отправление
-      AND gd.amount IS NOT NULL  
+      AND gd.amount IS NOT NULL
       AND we.date >= :mstart AND we.date < :mnext
       AND gl.date >= :mstart AND gl.date < :mnext   
 """
@@ -57,21 +56,21 @@ ALLOC_GENERAL_EXPENSES_SQL = """
         ge.cost_category_id,
         wh_out.department_id,
         ge.date,
-        NULL::uuid AS goods_doc_id, 
+        NULL::uuid AS goods_doc_id,
         ROUND(ge.amount * gd.amount / NULLIF(SUM(gd.amount) OVER (PARTITION BY ge.registrar_id), 0), :precision) AS amount
-    FROM general_expenses AS ge
-    JOIN transfers AS tr
+    FROM reg_general_expenses AS ge
+    JOIN doc_transfers AS tr
       ON tr.date >= :mstart AND tr.date < :mnext AND tr.type_transfer = 'Погрузка в машину'
-    JOIN warehouses AS wh_out ON tr.out_warehouse_id = wh_out.id
-    JOIN countries  AS cn_out ON wh_out.country_id = cn_out.id
-    JOIN warehouses AS wh_in  ON tr.in_warehouse_id = wh_in.id
-    JOIN countries  AS cn_in  ON wh_in.country_id  = cn_in.id
-    JOIN goods_transfers AS gt ON gt.transfer_id = tr.id
-    JOIN goods AS gd ON gd.id = gt.goods_id
+    JOIN ref_warehouses AS wh_out ON tr.out_warehouse_id = wh_out.id
+    JOIN ref_countries  AS cn_out ON wh_out.country_id = cn_out.id
+    JOIN ref_warehouses AS wh_in  ON tr.in_warehouse_id = wh_in.id
+    JOIN ref_countries  AS cn_in  ON wh_in.country_id  = cn_in.id
+    JOIN doc_link_goods_transfers AS gt ON gt.transfer_id = tr.id
+    JOIN ref_goods AS gd ON gd.id = gt.goods_id
     WHERE gd.amount IS NOT NULL
       AND cn_out.name = 'КИТАЙ'
       AND cn_in.name <> 'КИТАЙ'
-	  AND ge.date >= :mstart AND ge.date < :mnext
+      AND ge.date >= :mstart AND ge.date < :mnext
     ;
 
 """

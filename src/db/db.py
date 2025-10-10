@@ -6,7 +6,7 @@ from sqlmodel import create_engine
 
 from src.config import settings
 from src.db.models import DeletedObject
-from src.handlers.registry import REGISTRY, CASCADE_DELETED_MAP
+from src.db.registry import REGISTRY, CASCADE_DELETED_MAP
 from sqlalchemy import delete as sa_delete
 import logging
 

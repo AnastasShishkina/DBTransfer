@@ -9,7 +9,6 @@ from src.db.db import engine
 from src.db import models as app_models  # noqa
 from sqlmodel import SQLModel
 
-from src.db.models import dev_drop_all_tables
 
 # ---------- helpers ----------
 
@@ -195,6 +194,4 @@ def create_year_partitions(year = datetime.now().year) -> None:
 
 
 if __name__ == "__main__":
-    #dev_drop_all_tables(engine)
     create_year_partitions(datetime.now().year)
-    # create_year_partitions(2025)

@@ -107,9 +107,9 @@ def recalc_period_by_months( engine: Engine,  period_start: date, period_end: da
 
     for mstart, mnext in iter_months(period_start, period_end):
 
-        replace_allocations_for_month(engine, "direct_expenses",    ALLOC_DIRECT_EXPENSES_SQL,    mstart, mnext)
-        replace_allocations_for_month(engine, "warehouse_expenses", ALLOC_WAREHOUSE_EXPENSES_SQL, mstart, mnext)
-        replace_allocations_for_month(engine, "general_expenses",   ALLOC_GENERAL_EXPENSES_SQL,   mstart, mnext)
+        replace_allocations_for_month(engine, "reg_direct_expenses",    ALLOC_DIRECT_EXPENSES_SQL,    mstart, mnext)
+        replace_allocations_for_month(engine, "reg_warehouse_expenses", ALLOC_WAREHOUSE_EXPENSES_SQL, mstart, mnext)
+        replace_allocations_for_month(engine, "reg_general_expenses",   ALLOC_GENERAL_EXPENSES_SQL,   mstart, mnext)
 
         results.append(
             {
